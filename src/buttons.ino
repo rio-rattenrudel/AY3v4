@@ -1,0 +1,405 @@
+void doButtons()
+{
+    // PORTB reset (LED)
+    PORTB = B11111111;
+
+    // Butt Matrix
+
+    switch (btntickcc) {
+
+        case 0: // Phase 1
+                PORTA &= ~_BV(1); // digitalWrite (A1-25, LOW);
+                PORTA |= _BV(2);  // digitalWrite (A2, HIGH);
+                PORTA |= _BV(3);  // digitalWrite (A3, HIGH);
+                PORTC |= _BV(0);  // digitalWrite (16, HIGH);
+
+                butt[1] = digitalRead(5); // ENCODER SWITCH
+                butt[2] = digitalRead(6); // CHANNEL: b
+                butt[3] = digitalRead(7); // CHANNEL: f
+
+                if (butt[1] != buttLast[1]) buttPressed(1, butt[1]);
+                if (butt[2] != buttLast[2]) buttPressed(2, butt[2]);
+                if (butt[3] != buttLast[3]) buttPressed(3, butt[3]);
+                break;
+
+        case 1: // Phase 2
+                PORTA |= _BV(1);  // digitalWrite (A1-25, HIGH);
+                PORTA &= ~_BV(2); // digitalWrite (A2-26, LOW);
+                PORTA |= _BV(3);  // digitalWrite (A3-27, HIGH);
+                PORTC |= _BV(0);  // digitalWrite (16, HIGH);
+
+                butt[4] = digitalRead(5); // ROW 5: SEQ
+                butt[5] = digitalRead(6); // ROW 2: LFO/ARP
+                butt[6] = digitalRead(7); // CHANNEL: c
+
+                if (butt[4] != buttLast[4]) buttPressed(4, butt[4]);
+                if (butt[5] != buttLast[5]) buttPressed(5, butt[5]);
+                if (butt[6] != buttLast[6]) buttPressed(6, butt[6]);
+                break;
+
+        case 2: // Phase 3
+                PORTA |= _BV(1);  // digitalWrite (A1-25, HIGH);
+                PORTA |= _BV(2);  // digitalWrite (A2-26, HIGH);
+                PORTA &= ~_BV(3); // digitalWrite (A3-27, LOW);
+                PORTC |= _BV(0);  // digitalWrite (16, HIGH);
+
+                butt[7] = digitalRead(5); // ROW 4: ENV
+                butt[8] = digitalRead(6); // ROW 1: VOICE
+                butt[9] = digitalRead(7); // CHANNEL: d
+
+                if (butt[7] != buttLast[7]) buttPressed(7, butt[7]);
+                if (butt[8] != buttLast[8]) buttPressed(8, butt[8]);
+                if (butt[9] != buttLast[9]) buttPressed(9, butt[9]);
+                break;
+
+        case 3: // Phase 4
+                PORTA |= _BV(1);  // digitalWrite (A1-25, HIGH);
+                PORTA |= _BV(2);  // digitalWrite (A2-26, HIGH);
+                PORTA |= _BV(3);  // digitalWrite (A3-27, HIGH);
+                PORTC &= ~_BV(0); // digitalWrite (16, LOW);
+
+                butt[10] = digitalRead(5); // ROW 3: NOISE
+                butt[11] = digitalRead(6); // CHANNEL: a
+                butt[12] = digitalRead(7); // CHANNEL: e
+
+                if (butt[10] != buttLast[10]) buttPressed(10, butt[10]);
+                if (butt[11] != buttLast[11]) buttPressed(11, butt[11]);
+                if (butt[12] != buttLast[12]) buttPressed(12, butt[12]);
+                break;
+
+    } // End buttMatrix
+
+    btntickcc++;
+    if (btntickcc > 3) btntickcc = 0;
+}
+
+void buttPressed(int pin, int state)
+{
+    buttLast[pin] = state;
+
+    // pressed
+    if (state == 0) {
+
+        // general handling
+        if ((pressedRow == 1 && pin == 8 && voiceMode == 1) ||  // [V T E release]
+            (pressedRow == 2 && pin == 5) ||
+            (pressedRow == 5 && pin == 4)) {
+
+            pressedRow = 0;
+            ledNumber = oldNumber;
+
+            // reset any extra visuals: skip displaycc running 
+            if (displaycc < 20000) displaycc = MAX_LEDPICCOUNT; 
+            return;
+        }
+
+        switch (pin) {
+
+            //
+            // ENCODER SWITCH
+            //
+
+            case 1:     // envelope should toggle envelop speed mode
+                        if (pressedRow == 4 && envPeriodType == 0) {
+
+                            // no sequence?
+                            if (seqSetup == 1) {
+
+                                // update state
+                                encoderMoved(0);
+
+                                if (displaycc >= MAX_LEDPICCOUNT) {
+                                    oldNumber = ledNumber;
+
+                                    oldMatrix[1] = ledMatrix[1];
+                                    oldMatrix[2] = ledMatrix[2];
+                                    oldMatrix[3] = ledMatrix[3];
+                                    oldMatrix[4] = ledMatrix[4];
+                                    oldMatrix[5] = ledMatrix[5];
+                                }
+
+                                // toggle envelope mode [F O]
+                                envMode = envMode ? 0 : 1;
+
+                                displaycc = 0;
+
+                                // F - Full Range Mode (default)
+                                if (envMode == 0) {
+                                    
+                                    ledMatrixPic[1] = B011111;
+                                    ledMatrixPic[2] = B000011;
+                                    ledMatrixPic[3] = B011111;
+                                    ledMatrixPic[4] = B000011;
+                                    ledMatrixPic[5] = B000011;
+                                }
+
+                                // O - Note Offset Mode
+                                if (envMode == 1) {
+
+                                    ledMatrixPic[1] = B011110;
+                                    ledMatrixPic[2] = B110011;
+                                    ledMatrixPic[3] = B110011;
+                                    ledMatrixPic[4] = B110011;
+                                    ledMatrixPic[5] = B011110;
+                                }
+                            }
+
+                        // toggle preset / bank
+                        } else if (!pressedRow) {
+
+                            // mode: PRESET / BANK
+                            mode = (mode == 1) ? 2 : 1;
+
+                            savePressed = true;
+                            countDown = 9;
+                            oldNumber = ledNumber;
+                        }
+                        break;
+
+            //
+            // MATRIX ROWS
+            //
+
+            case 8:     // ROW 1: VOICE
+                        pressedRow = 1;
+
+                        // initiate voicePressed state
+                        resetcc = millis() + 4000;
+                        voicePressed = true;
+
+                        // sequence?
+                        if (seqSetup == 0) seqVoice[selectedStep] = !seqVoice[selectedStep];
+                        else {
+
+                            // update state
+                            encoderMoved(0);
+
+                            if (displaycc >= MAX_LEDPICCOUNT) {
+                                oldNumber = ledNumber;
+
+                                oldMatrix[1] = ledMatrix[1];
+                                oldMatrix[2] = ledMatrix[2];
+                                oldMatrix[3] = ledMatrix[3];
+                                oldMatrix[4] = ledMatrix[4];
+                                oldMatrix[5] = ledMatrix[5];
+                            }
+
+                            // roll voice mode [E V T]
+                            voiceMode++;
+                            if (voiceMode > 3) voiceMode = 1;
+
+                            displaycc = 0;
+
+                            if (voiceMode == 1) { // enable
+                                ledMatrixPic[1] = B011110;
+                                ledMatrixPic[2] = B000011;
+                                ledMatrixPic[3] = B001111;
+                                ledMatrixPic[4] = B000011;
+                                ledMatrixPic[5] = B011110;
+                            }
+
+                            if (voiceMode == 2) { // vol
+                                ledMatrixPic[1] = B110011;
+                                ledMatrixPic[2] = B110011;
+                                ledMatrixPic[3] = B110011;
+                                ledMatrixPic[4] = B011110;
+                                ledMatrixPic[5] = B001100;
+                            }
+
+                            if (voiceMode == 3) { // tune
+                                ledMatrixPic[1] = B111111;
+                                ledMatrixPic[2] = B111111;
+                                ledMatrixPic[3] = B001100;
+                                ledMatrixPic[4] = B001100;
+                                ledMatrixPic[5] = B001100;
+                            }
+                        }
+                        break;
+
+            case 5:     // ROW 2: LFO/ARP
+
+                        // no sequence? -> lfo pitch
+                        if (seqSetup == 1) {
+                            pressedRow = 2;
+                            encoderMoved(0);
+                        }
+                        break;
+
+            case 10:    // ROW 3: NOISE
+            case 7:     // ROW 4: ENV
+
+                        // RELEASE or DISPLAY CHIP
+                        if ((pressedRow == 3 && pin == 10) || 
+                            (pressedRow == 4 && pin == 7)) {
+
+                            // no sequence
+                            if (seqSetup == 1) {
+
+                                // select chip 2
+                                if (selectedChip == 0) {
+                                    selectedChip = 1;
+                                    pressedCol = 4;
+
+                                // select both chips
+                                } else if (selectedChip == 1) {
+                                    selectedChip = -1;
+
+                                // release (select chip 1)
+                                } else {
+                                    selectedChip = 0;
+                                    pressedRow = 0;
+                                    pressedCol = 0;
+                                    ledNumber = oldNumber;
+
+                                    // store last single chip
+                                    lastSingleChip = 0;
+                                    return;
+                                }
+                            }
+
+                        } else {
+
+                            // no sequence
+                            if (seqSetup == 1) {
+
+                                // select chip 1
+                                selectedChip = 0;
+                                pressedCol = 1;
+                            }
+                        }
+
+                        // NOISE
+                        if (pin == 10) {
+                            pressedRow = 3;
+
+                            // sequence?
+                            if (seqSetup == 0)  seqNoise[selectedStep] = !seqNoise[selectedStep];
+                            else                encoderMoved(0);
+
+                        // ENVELOPE
+                        } else {
+
+                            // no sequence? -> env
+                            if (seqSetup == 1) {
+                                pressedRow = 4;
+                                encoderMoved(0);
+                            }
+                        }
+                        break;
+
+            case 4:     // ROW 5: SEQ
+                        pressedRow = 5;
+
+                        oldNumber = ledNumber;
+                        seqPressed = 1;
+                        countDown = 9;
+
+                        oldMatrix[1] = ledMatrix[1];
+                        oldMatrix[2] = ledMatrix[2];
+                        oldMatrix[3] = ledMatrix[3];
+                        oldMatrix[4] = ledMatrix[4];
+                        oldMatrix[5] = ledMatrix[5];
+                        encoderMoved(0);
+                        break;
+
+            //
+            // MATRIX COLS
+            //
+
+            case 11:    // CHANNEL: a
+                        pressedCol = 1;
+                        selectedChip = 0;
+                        break;
+
+            case 2:     // CHANNEL: b
+                        pressedCol = 2;
+                        selectedChip = 0;
+                        break;
+
+            case 6:     // CHANNEL: c
+                        pressedCol = 3;
+                        selectedChip = 0;
+                        break;
+
+            case 9:     // CHANNEL: d
+                        pressedCol = 4;
+                        selectedChip = 1;
+                        break;
+
+            case 12:    // CHANNEL: e
+                        pressedCol = 5;
+                        selectedChip = 1;
+                        break;
+
+            case 3:     // CHANNEL: f
+                        pressedCol = 6;
+                        selectedChip = 1;
+                        break;
+
+        }
+
+        // store last single chip
+        if (selectedChip > -1) lastSingleChip = selectedChip;
+
+        // reset "voice mode: E"    
+        if (pressedRow != 1) voiceMode = 1;
+
+        // show led states, (inclusive "voice mode: E")
+        if (pressedRow != 1 || (pressedRow == 1 && voiceMode == 1))
+        {
+
+            // MATRIX COLS
+            if (pin == 11 || pin == 2 || pin == 6 || pin == 9 || pin == 12 || pin == 3)
+            {
+                bitWrite(ledMatrix[pressedRow], pressedCol - 1, !bitRead(ledMatrix[pressedRow], pressedCol - 1));
+
+                // VOICE, NOISE, ENV handling
+                if (pressedRow == 1 ||
+                    pressedRow == 3 ||
+                    pressedRow == 4)
+                    encoderMoved(0);
+            }
+        }
+
+    // released
+    } else {
+
+        switch (pin) {
+
+            //
+            // ENCODER SWITCH
+            //
+
+            case 1:     // handle except envelope selection
+                        if (pressedRow != 4 || envPeriodType == 1) {
+
+                            savePressed = false;
+                            ledNumber = oldNumber;
+                            pressedRow = 0;
+                            encoderMoved(0);
+
+                            // store changed PRESET / BANK position
+                            if (lastPreset != preset)   { lastPreset = preset;  EEPROM.write(3800, preset); }
+                            if (lastBank != bank)       { lastBank = bank;      EEPROM.write(3801, bank); }
+                        }
+                        break;
+
+            //
+            // MATRIX COLS
+            //
+
+            case 4:     seqPressed = false;
+                        ledNumber = oldNumber;
+                        break;
+
+            //
+            // MATRIX ROWS
+            //
+
+            case 8:     // ROW 1: VOICE
+                        voicePressed = false;
+                        break;
+        }
+    }
+
+}
