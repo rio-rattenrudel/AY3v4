@@ -88,6 +88,7 @@ int8_t selectedChip     = 0;        // -1 both, 0 chip1, 1 chip2
 int8_t lastSingleChip   = 0;
 byte seqSetup           = 1;
 byte mode               = 1;
+bool initial            = true;
 
 // ay3
 byte ay3Reg1[14];
@@ -228,8 +229,8 @@ const int envTp[] = {                                               //          
 
 
 // pitch lookup table - frequencies related to midi notes (12 bit) 
-//  +   used as an old envelope speed lookup table for frequencies (old LUT)
-//      envPeriodType: 1
+//  used for notes & env-notes (except for CLOCK_LOW type)
+//  used also as old envelope speed lookup table for frequencies (old LUT)
 
 const int noteTp[] = {                                  //              C-Notes
     3822, 3608, 3405, 3214, 3034, 2863, 2703, 2551,     // 0   - 7      2

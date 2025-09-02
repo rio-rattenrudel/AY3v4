@@ -205,7 +205,7 @@ void preparePitches()
             destiPitch[channel] = calculatePitch(channel, false);
 
             // envMode 1 and first channels of chip 1 & 2
-            if (envMode == 1 && (channel == 1 || channel == 4)) {
+            if (envPeriodType == 0 && envMode == 1 && (channel == 1 || channel == 4)) {
                 int envValue = calculatePitch(channel, true);
 
                 // channel a

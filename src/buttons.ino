@@ -376,11 +376,16 @@ void buttPressed(int pin, int state)
                             savePressed = false;
                             ledNumber = oldNumber;
                             pressedRow = 0;
-                            encoderMoved(0);
 
-                            // store changed PRESET / BANK position
-                            if (lastPreset != preset)   { lastPreset = preset;  EEPROM.write(3800, preset); }
-                            if (lastBank != bank)       { lastBank = bank;      EEPROM.write(3801, bank); }
+                            // initial loading of preset
+                            if (initial) {
+                                initial = false;
+                                encoderMoved(0);
+                            }
+
+                            // store changed PRESET / BANK position & loading of preset
+                            if (lastPreset != preset)   { encoderMoved(0); lastPreset = preset;  EEPROM.write(3800, preset); }
+                            if (lastBank != bank)       { encoderMoved(0); lastBank = bank;      EEPROM.write(3801, bank); }
                         }
                         break;
 
