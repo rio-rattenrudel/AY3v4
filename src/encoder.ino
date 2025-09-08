@@ -31,8 +31,16 @@ void doEncoder()
     } else encTimer--;
 }
 
+void encoderMovedAymid(int8_t dir)
+{
+    // STATE MACHINE
+}
+
 void encoderMoved(int8_t dir)
 {
+    // AYMID routine
+    if (aymidState.enabled) return encoderMovedAymid(dir);
+
     if (seqSetup == 0) {
 
         // set step

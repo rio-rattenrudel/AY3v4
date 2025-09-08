@@ -1,12 +1,76 @@
+void potTickAymid()
+{
+    int analogTemp;
+
+    switch (pottickcc) {
+        case 0:     analogTemp = analogRead(A4) >> 2;
+                    if (analogTemp > (potLast[0] + 1) || 
+                        analogTemp < (potLast[0] - 1)) {
+                        potLast[0]  = analogTemp;
+
+                        // 1 POT - (LFO/ARP SPEED)
+
+                    }
+                    break;
+
+        case 1:     analogTemp = analogRead(A5) >> 2;
+                    if (analogTemp > (potLast[1] + 1) || 
+                        analogTemp < (potLast[1] - 1)) {
+                        potLast[1] = analogTemp;
+
+                        // 2 POT - (LFO/ARP DEPTH)
+
+                    }
+                    break;
+
+        case 2:     analogTemp = analogRead(A7) >> 2;
+                    if (analogTemp > (potLast[3] + 1) || 
+                        analogTemp < (potLast[3] - 1)) {
+                        potLast[3] = analogTemp;
+
+                        // 5 POT - (GLIDE)
+
+                    }
+                    break;
+
+        case 3:     analogTemp = analogRead(A6) >> 2;
+                    if (analogTemp > (potLast[4] + 1) || 
+                        analogTemp < (potLast[4] - 1)) {
+                        potLast[4] = analogTemp;
+
+                        // 4 POT - (DETUNE)
+                    }
+                    break;
+
+        case 4:     analogTemp = analogRead(A0);
+                    if ((analogTemp >> 2) > (potLast[2] + 1) || 
+                        (analogTemp >> 2) < (potLast[2] - 1)) {
+
+                        // 6 POT - (ENV/SEQ SPEED) // FULL SCALED
+
+                        // scale down to 8bit
+                        analogTemp >>= 2;
+
+                        // 6 POT - (ENV/SEQ SPEED) // CRUSHED SIZE
+                    }
+                    break;
+    }
+
+    pottickcc++;
+    if (pottickcc > 4) pottickcc = 0;
+}
+
 void doPots()
 {
     analogcc++;
     if (analogcc <= ASYNC_DELAY) return; // time-critical (insync with loop)
 
     analogcc = 0;
-    int analogTemp;
 
-    //uint16_t max16 = 0;
+    // AYMID routine
+    if (aymidState.enabled) return potTickAymid();
+
+    int analogTemp;
 
     switch (pottickcc) {
         case 0:     analogTemp = analogRead(A4) >> 2;

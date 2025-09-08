@@ -6,6 +6,129 @@ int matrixFlasher;
 bool flippedS = false;
 bool flippedN = false;
 
+void ledTickAymid()
+{
+    byte maskB = B11111111;
+    byte maskC = B00000000;
+
+    switch (ledtickcc)
+    {
+        case 0: // LEDNUMBER
+                if (ledNumber == 1) { maskB = B11111110; maskC = B01000000; }
+                if (ledNumber == 2) { maskB = B11111101; maskC = B01000000; }
+                if (ledNumber == 3) { maskB = B11111011; maskC = B01000000; }
+                if (ledNumber == 4) { maskB = B11110111; maskC = B01000000; }
+                if (ledNumber == 5) { maskB = B11101111; maskC = B01000000; }
+                if (ledNumber == 7) { maskB = B11111101; maskC = B10000000; }
+                if (ledNumber == 6) { maskB = B11111110; maskC = B10000000; }
+                if (ledNumber == 8) { maskB = B11111011; maskC = B10000000; }
+
+                PORTB = maskB;
+                PORTC = maskC;
+                miniDelay();
+
+                if      (mode == 1) { maskB = B11101111; maskC = B10000000; }
+                else if (mode == 2) { maskB = B11110111; maskC = B10000000; }
+
+                PORTB = maskB;
+                PORTC = maskC;
+                miniDelay();
+                break;
+
+
+        case 1: // LEDMATRIX
+
+
+                //
+                // VOICE
+                //
+
+                if (flippedN && false) { // +condition
+                    if (ledMatrix[1] != 0)  maskC = 0;
+                    else                    maskC = B00111111;
+                } else                      maskC = ledMatrix[1];
+
+                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[1];
+
+                PORTB = B11111110; // set pin
+                PORTC = maskC;
+                miniDelay();
+
+
+                //
+                // LFO / ARP
+                //
+
+                if (flippedN && false) { // +condition
+                    if (ledMatrix[2] != 0)  maskC = 0;
+                    else                    maskC = B00111111;
+                } else                      maskC = ledMatrix[2];
+
+                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[2];
+
+                PORTB = B11111101; // set pin
+                PORTC = maskC;
+                miniDelay();
+
+
+                //
+                // NOISE
+                //
+
+                if (flippedN && false) { // +condition
+                    if (ledMatrix[3] != 0)  maskC = 0;
+                    else                    maskC = B00111111;
+                } else                      maskC = ledMatrix[3];
+
+                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[3];
+
+                PORTB = B11111011; // set pin
+                PORTC = maskC;
+                miniDelay();
+
+
+                //
+                // ENVELOPE
+                //
+
+                if (flippedN && false) { // +condition
+                    if (ledMatrix[4] != 0)  maskC = 0;
+                    else                    maskC = B00111111;
+                } else                      maskC = ledMatrix[4];
+
+                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[4];
+
+                PORTB = B11110111; // set pin
+                PORTC = maskC;
+                miniDelay();
+
+
+                //
+                // SEQUENCER
+                //
+
+                if (flippedN && false) { // +condition
+                    if (ledMatrix[5] != 0)  maskC = 0;
+                    else                    maskC = B00111111;
+                } else                      maskC = ledMatrix[5];
+
+                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[5];
+
+                PORTB = B11101111; // set pin
+                PORTC = maskC;
+                miniDelay();
+                break;
+
+        default: // switch off
+
+                PORTB = maskB;
+                miniDelay();
+    }
+
+    ledtickcc++;
+    if (ledtickcc > 1 + DIMLEVEL) ledtickcc = 0;
+}
+
 void doLedMatrix()
 {
     // decide flasher's speed (2x or 1x - default)
@@ -28,6 +151,8 @@ void doLedMatrix()
 
     } else flippedS = flippedN = false;
 
+    // AYMID routine
+    if (aymidState.enabled) return ledTickAymid();
 
     // 1 = 1,6
     // 2 = 2,6
@@ -45,7 +170,8 @@ void doLedMatrix()
 
     switch (ledtickcc)
     {
-        case 0: if (ledNumber == 1) { maskB = B11111110; maskC = B01000000; }
+        case 0:  // LEDNUMBER
+                if (ledNumber == 1) { maskB = B11111110; maskC = B01000000; }
                 if (ledNumber == 2) { maskB = B11111101; maskC = B01000000; }
                 if (ledNumber == 3) { maskB = B11111011; maskC = B01000000; }
                 if (ledNumber == 4) { maskB = B11110111; maskC = B01000000; }

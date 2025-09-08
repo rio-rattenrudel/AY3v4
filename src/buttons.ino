@@ -73,9 +73,93 @@ void doButtons()
     if (btntickcc > 3) btntickcc = 0;
 }
 
+void buttPressedAymid(int pin, int state)
+{
+    // pressed
+    if (state == 0) {
+
+        switch (pin) {
+
+            //
+            // ENCODER SWITCH
+            //
+
+            case 1:     break;
+
+            //
+            // MATRIX ROWS
+            //
+
+            case 8:     // ROW 1: VOICE
+                        break;
+
+            case 5:     // ROW 2: LFO/ARP
+                        break;
+
+            case 10:    // ROW 3: NOISE
+                        break;
+
+            case 7:     // ROW 4: ENV
+                        break;
+
+            case 4:     // ROW 5: SEQ
+                        break;
+
+            //
+            // MATRIX COLS
+            //
+
+            case 11:    // CHANNEL: a
+                        break;
+
+            case 2:     // CHANNEL: b
+                        break;
+
+            case 6:     // CHANNEL: c
+                        break;
+
+            case 9:     // CHANNEL: d
+                        break;
+
+            case 12:    // CHANNEL: e
+                        break;
+
+            case 3:     // CHANNEL: f
+                        break;
+        }
+
+    // released
+    } else {
+
+        switch (pin) {
+
+            //
+            // ENCODER SWITCH
+            //
+
+            case 1:     break;
+
+            //
+            // MATRIX COLS
+            //
+
+            case 4:     break;
+
+            //
+            // MATRIX ROWS
+            //
+
+            case 8:     break;
+        }
+    }
+}
+
 void buttPressed(int pin, int state)
 {
     buttLast[pin] = state;
+
+    // AYMID routine
+    if (aymidState.enabled) return buttPressedAymid(pin, state);
 
     // pressed
     if (state == 0) {
@@ -406,5 +490,4 @@ void buttPressed(int pin, int state)
                         break;
         }
     }
-
 }
