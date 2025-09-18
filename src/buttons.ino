@@ -164,16 +164,16 @@ void buttPressed(int pin, int state)
     // pressed
     if (state == 0) {
 
+        // restore current matrix values
+        if (displaycc < 20000) restoreMatrix();
+
         // general handling
-        if ((pressedRow == 1 && pin == 8 && voiceMode == 1) ||  // [V T E release]
+        if ((pressedRow == 1 && pin == 8 && voiceMode == VOICE_ENABLE) ||  // [V T E release]
             (pressedRow == 2 && pin == 5) ||
             (pressedRow == 5 && pin == 4)) {
 
             pressedRow = 0;
             ledNumber = oldNumber;
-
-            // reset any extra visuals: skip displaycc running 
-            if (displaycc < 20000) displaycc = MAX_LEDPICCOUNT; 
             return;
         }
 
@@ -184,7 +184,7 @@ void buttPressed(int pin, int state)
             //
 
             case 1:     // envelope should toggle envelop speed mode
-                        if (pressedRow == 4 && envPeriodType == 0) {
+                        if (pressedRow == 3 || (pressedRow == 4 && envPeriodType == 0)) {
 
                             // no sequence?
                             if (seqSetup == 1) {
@@ -192,39 +192,46 @@ void buttPressed(int pin, int state)
                                 // update state
                                 encoderMoved(0);
 
-                                if (displaycc >= MAX_LEDPICCOUNT) {
-                                    oldNumber = ledNumber;
+                                if (displaycc >= MAX_LEDPICCOUNT) copyMatrixAndNumber();
 
-                                    oldMatrix[1] = ledMatrix[1];
-                                    oldMatrix[2] = ledMatrix[2];
-                                    oldMatrix[3] = ledMatrix[3];
-                                    oldMatrix[4] = ledMatrix[4];
-                                    oldMatrix[5] = ledMatrix[5];
-                                }
+                                byte m = pressedRow == 3 ? noiseMode : envMode;
 
                                 // toggle envelope mode [F O]
-                                envMode = envMode ? 0 : 1;
+                                m = m ? 0 : 1;
 
                                 displaycc = 0;
 
                                 // F - Full Range Mode (default)
-                                if (envMode == 0) {
+                                if (m == 0) {
                                     
-                                    ledMatrixPic[1] = B011111;
-                                    ledMatrixPic[2] = B000011;
-                                    ledMatrixPic[3] = B011111;
-                                    ledMatrixPic[4] = B000011;
-                                    ledMatrixPic[5] = B000011;
+                                    ledMatrixPic[1] = B110011;
+                                    ledMatrixPic[2] = B110011;
+                                    ledMatrixPic[3] = B011110;
+                                    ledMatrixPic[4] = B110011;
+                                    ledMatrixPic[5] = B110011;
                                 }
 
                                 // O - Note Offset Mode
-                                if (envMode == 1) {
+                                if (m == 1) {
 
-                                    ledMatrixPic[1] = B011110;
-                                    ledMatrixPic[2] = B110011;
-                                    ledMatrixPic[3] = B110011;
-                                    ledMatrixPic[4] = B110011;
-                                    ledMatrixPic[5] = B011110;
+                                    ledMatrixPic[1] = B000110;
+                                    ledMatrixPic[2] = B001100;
+                                    ledMatrixPic[3] = B011000;
+                                    ledMatrixPic[4] = B001100;
+                                    ledMatrixPic[5] = B000110;
+                                }
+
+                                if (pressedRow == 3) {
+                                    noiseMode = m;
+
+                                    // restore last value
+                                    if (m == 0) updateNoiseFreq();
+
+                                } else {
+                                    envMode = m;
+
+                                    // restore last value
+                                    if (m == 0) updateEnvSpeed();
                                 }
                             }
 
@@ -258,23 +265,15 @@ void buttPressed(int pin, int state)
                             // update state
                             encoderMoved(0);
 
-                            if (displaycc >= MAX_LEDPICCOUNT) {
-                                oldNumber = ledNumber;
-
-                                oldMatrix[1] = ledMatrix[1];
-                                oldMatrix[2] = ledMatrix[2];
-                                oldMatrix[3] = ledMatrix[3];
-                                oldMatrix[4] = ledMatrix[4];
-                                oldMatrix[5] = ledMatrix[5];
-                            }
+                            if (displaycc >= MAX_LEDPICCOUNT) copyMatrixAndNumber();
 
                             // roll voice mode [E V T]
                             voiceMode++;
-                            if (voiceMode > 3) voiceMode = 1;
+                            if (voiceMode > VOICE_TUNING) voiceMode = VOICE_ENABLE;
 
                             displaycc = 0;
 
-                            if (voiceMode == 1) { // enable
+                            if (voiceMode == VOICE_ENABLE) {
                                 ledMatrixPic[1] = B011110;
                                 ledMatrixPic[2] = B000011;
                                 ledMatrixPic[3] = B001111;
@@ -282,7 +281,7 @@ void buttPressed(int pin, int state)
                                 ledMatrixPic[5] = B011110;
                             }
 
-                            if (voiceMode == 2) { // vol
+                            if (voiceMode == VOICE_VOLUME) {
                                 ledMatrixPic[1] = B110011;
                                 ledMatrixPic[2] = B110011;
                                 ledMatrixPic[3] = B110011;
@@ -290,7 +289,7 @@ void buttPressed(int pin, int state)
                                 ledMatrixPic[5] = B001100;
                             }
 
-                            if (voiceMode == 3) { // tune
+                            if (voiceMode == VOICE_TUNING) {
                                 ledMatrixPic[1] = B111111;
                                 ledMatrixPic[2] = B111111;
                                 ledMatrixPic[3] = B001100;
@@ -374,15 +373,10 @@ void buttPressed(int pin, int state)
             case 4:     // ROW 5: SEQ
                         pressedRow = 5;
 
-                        oldNumber = ledNumber;
                         seqPressed = 1;
                         countDown = 9;
 
-                        oldMatrix[1] = ledMatrix[1];
-                        oldMatrix[2] = ledMatrix[2];
-                        oldMatrix[3] = ledMatrix[3];
-                        oldMatrix[4] = ledMatrix[4];
-                        oldMatrix[5] = ledMatrix[5];
+                        copyMatrixAndNumber();
                         encoderMoved(0);
                         break;
 
@@ -426,10 +420,10 @@ void buttPressed(int pin, int state)
         if (selectedChip > -1) lastSingleChip = selectedChip;
 
         // reset "voice mode: E"    
-        if (pressedRow != 1) voiceMode = 1;
+        if (pressedRow != 1) voiceMode = VOICE_ENABLE;
 
         // show led states, (inclusive "voice mode: E")
-        if (pressedRow != 1 || (pressedRow == 1 && voiceMode == 1))
+        if (pressedRow != 1 || (pressedRow == 1 && voiceMode == VOICE_ENABLE))
         {
 
             // MATRIX COLS
@@ -455,7 +449,7 @@ void buttPressed(int pin, int state)
             //
 
             case 1:     // handle except envelope selection
-                        if (pressedRow != 4 || envPeriodType == 1) {
+                        if (pressedRow != 3 && !(pressedRow == 4 && envPeriodType == 0)) {
 
                             savePressed = false;
                             ledNumber = oldNumber;

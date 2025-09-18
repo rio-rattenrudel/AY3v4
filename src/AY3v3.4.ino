@@ -2,7 +2,8 @@
 #include <EEPROM.h>
 #include <assert.h>
 
-enum class InitState { ALL, TON, NOISE, MIXER, AMP, ENVELOPE };
+enum class InitState { ALL, TONE, NOISE, MIXER, AMP, ENVELOPE };
+enum class PitchType { TONE, NOISE, ENVELOPE };
 
 //
 // DEFINES
@@ -55,6 +56,10 @@ enum class InitState { ALL, TON, NOISE, MIXER, AMP, ENVELOPE };
 #define LFO_SHAPE2      2
 #define LFO_SHAPE3      3
 #define LFO_SHAPE4      4
+
+#define VOICE_ENABLE    1
+#define VOICE_VOLUME    2
+#define VOICE_TUNING    3
 
 
 // debug
@@ -131,7 +136,7 @@ byte butt[20];
 byte buttLast[20];
 byte pressedRow         = 0;
 byte pressedCol         = 9;
-byte voiceMode          = 1;
+byte voiceMode          = VOICE_ENABLE;
 bool seqPressed;
 bool savePressed;
 bool voicePressed;
@@ -163,6 +168,7 @@ byte arpStep[7]         = { 1, 1, 1, 1, 1, 1, 1 };  // MASTER, 1, 2, 3, 4, 5, 6
 byte arpOct[7]          = { 0, 0, 0, 0, 0, 0, 0 };  // MASTER, 1, 2, 3, 4, 5, 6
 byte noteMem[7][20];                                // MASTER, 1, 2, 3, 4, 5, 6
 byte noiseFreq[2]       = { 16, 16 };
+byte noiseMode          = 0;
 byte envNumber[2]       = { 1, 1 };
 byte envShape[2];
 byte lastEnvSpeedLUT;

@@ -41,6 +41,7 @@ void save()
         writey(lastEnvSpeed & 0xF);
         writey(lastEnvSpeed >> 8);
         writey(envMode);
+        writey(noiseMode);
     }
 }
 
@@ -90,7 +91,6 @@ void load()
 
     // envelope (old LUT)
     lastEnvSpeedLUT = readey();
-    if (envPeriodType == 1) setEnvSpeedLUT(lastEnvSpeedLUT);
 
     // seq speed
     seqSpeed = readey();
@@ -164,5 +164,9 @@ void load()
     lastEnvSpeed |= readey() << 8;
     envMode = readey();
 
-    if (envPeriodType == 0) setEnvSpeed(lastEnvSpeed);
+    // noise mode
+    noiseMode = readey();
+
+    // update envelope freq
+    updateEnvSpeed();
 }

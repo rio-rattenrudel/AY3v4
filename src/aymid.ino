@@ -162,11 +162,11 @@ void aymidInitVoice(int chip, byte voice, InitState init) {
 
     for (byte chip = first; chip <= last; chip++) {
 
-        bool initTon        = init == InitState::ALL || init == InitState::TON;
+        bool initTone       = init == InitState::ALL || init == InitState::TONE;
         bool initNoise      = init == InitState::ALL || init == InitState::NOISE;
         bool initAmplitude  = init == InitState::ALL || init == InitState::AMP;
 
-        if (initTon) {
+        if (initTone) {
             aymidState.muteChannel[chip][voice] = false;
             aymidState.overrideTon[chip][voice] = OverrideState::AY3FILE;
             aymidState.adjustOctave[chip][voice] = 0;

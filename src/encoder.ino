@@ -223,7 +223,7 @@ void encoderMoved(int8_t dir)
         }
 
         // AMPLITUDE 0..15
-        if (voiceMode < 3) {
+        if (voiceMode < VOICE_TUNING) {
 
             if (pressedRow == 1 && 
                 pressedCol >= 1 && 
@@ -247,7 +247,7 @@ void encoderMoved(int8_t dir)
             }
 
         // TRANSPOSE 76..[100]..124     +/-24
-        } else if (voiceMode == 3) {
+        } else if (voiceMode == VOICE_TUNING) {
 
             if (pressedRow == 1 && 
                 pressedCol >= 1 && 

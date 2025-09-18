@@ -59,6 +59,12 @@ void setEnvSpeedLUT(byte speed)
     AY32(12, value >> 8);
 }
 
+void updateEnvSpeed()
+{
+    if      (envPeriodType == 0) setEnvSpeed(lastEnvSpeed);
+    else if (envPeriodType == 1) setEnvSpeedLUT(lastEnvSpeedLUT);
+}
+
 void triggerEnv()
 {
     AY3( 13, envShape[0]);
@@ -141,14 +147,20 @@ void assignChannelPitch(byte channel)
     if (base[channel]) pitch[channel] = destiPitch[channel];
 }
 
-int calculatePitch(byte channel, bool useEnvelope)
+int calculatePitch(byte channel, PitchType ptype)
 {
+    bool useEnvelope    = ptype == PitchType::ENVELOPE;
+    bool useNoise       = ptype == PitchType::NOISE;
+
     int temp;
 
     // note / env-note (no tune, no offset)
-    if (useEnvelope)    temp = base[channel];
-    else                temp = base[channel] + (100 - tune[channel]) + offsetNote[channel];
+    if (useEnvelope || useNoise)    temp = base[channel];
+    else                            temp = base[channel] + (100 - tune[channel]) + offsetNote[channel];
 
+    // lower the noise (1 oct), 
+    // substract current (max 16) noisefreq steps for each chip
+    if (useNoise) temp -= 12 + (channel < 4 ? noiseFreq[0] : noiseFreq[1]); 
 
     // clock frequency correction
     if (clockType != CLOCK_LOW) temp--; // -= HIGH CLOCK ADAPTIONS =-
@@ -202,11 +214,11 @@ void preparePitches()
 
         if (base[channel] != 0) {
 
-            destiPitch[channel] = calculatePitch(channel, false);
+            destiPitch[channel] = calculatePitch(channel, PitchType::TONE);
 
             // envMode 1 and first channels of chip 1 & 2
             if (envPeriodType == 0 && envMode == 1 && (channel == 1 || channel == 4)) {
-                int envValue = calculatePitch(channel, true);
+                int envValue = calculatePitch(channel, PitchType::ENVELOPE);
 
                 // channel a
                 if (channel == 1) {
@@ -218,6 +230,19 @@ void preparePitches()
                     AY32(11, envValue);
                     AY32(12, envValue >> 8);
                 }
+            }
+
+            // noiseMode 1 and first channels of chip 1 & 2
+            if (noiseMode == 1 && (channel == 1 || channel == 4)) {
+                byte noiseValue = calculatePitch(channel, PitchType::NOISE) >> 7; // downscaled to 5bit
+
+                // channel a
+                if (channel == 1)
+                    AY3(6, noiseValue);
+
+                // channel d
+                else if (channel == 4)
+                    AY32(6, noiseValue);
             }
 
             if (bitRead(ledMatrix[2], channel-1))
@@ -440,6 +465,12 @@ void setNoiseFreq(int chip, byte value)
         AYfunc = chip ? AY32 : AY3;
         AYfunc(6, value);
     }
+}
+
+void updateNoiseFreq()
+{
+    AY3( 6, noiseFreq[0]);
+    AY32(6, noiseFreq[1]);
 }
 
 

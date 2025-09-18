@@ -318,9 +318,7 @@ void receivedNote(byte channel, byte note, byte vel)
 
                 held[MASTER]++;
                 triggerEnv();
-
-                if      (envPeriodType == 0) setEnvSpeed(lastEnvSpeed);
-                else if (envPeriodType == 1) setEnvSpeedLUT(lastEnvSpeedLUT);
+                updateEnvSpeed();
 
                 // add note to mem
                 if (held[MASTER] > 19)
@@ -362,9 +360,7 @@ void receivedNote(byte channel, byte note, byte vel)
                 held[s]++;
 
                 triggerEnv();
-
-                if      (envPeriodType == 0) setEnvSpeed(lastEnvSpeed);
-                else if (envPeriodType == 1) setEnvSpeedLUT(lastEnvSpeedLUT);
+                updateEnvSpeed();
 
                 // limit
                 if (held[s] > 19)

@@ -359,15 +359,7 @@ void showMatrixedNumber(byte value)
 //  value = last - col (of row)
 //
 
-    if (displaycc >= MAX_LEDPICCOUNT) {
-        oldNumber = ledNumber;
-
-        oldMatrix[1] = ledMatrix[1];
-        oldMatrix[2] = ledMatrix[2];
-        oldMatrix[3] = ledMatrix[3];
-        oldMatrix[4] = ledMatrix[4];
-        oldMatrix[5] = ledMatrix[5];
-    }
+    if (displaycc >= MAX_LEDPICCOUNT) copyMatrixAndNumber();
 
     displaycc = 0;
 
@@ -401,4 +393,27 @@ void showMatrixedNumber(byte value)
     ledMatrixPic[4] = ((value % 30) > 18 && (value % 30) <= 24) ? col : B00000000;
     ledMatrixPic[5] = ((value % 30) > 24 && (value % 30) <= 30) ? col : B00000000;
     */
+}
+
+void copyMatrixAndNumber()
+{
+    oldNumber = ledNumber;
+
+    oldMatrix[1] = ledMatrix[1];
+    oldMatrix[2] = ledMatrix[2];
+    oldMatrix[3] = ledMatrix[3];
+    oldMatrix[4] = ledMatrix[4];
+    oldMatrix[5] = ledMatrix[5];
+}
+
+void restoreMatrix()
+{
+    if (displaycc != 20000) {
+        displaycc = 20000;
+        ledMatrix[1] = oldMatrix[1];
+        ledMatrix[2] = oldMatrix[2];
+        ledMatrix[3] = oldMatrix[3];
+        ledMatrix[4] = oldMatrix[4];
+        ledMatrix[5] = oldMatrix[5];
+    }
 }

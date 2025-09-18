@@ -84,15 +84,10 @@ void tickStateMachine()
 
     if (displaycc < 20000)
     {
+        // prevent conflicts
         if (!writeConfig) displaycc++;
 
-        // Counter to wipe numbers on led matrix and revert back to stored led matrix
-        if (displaycc == 20000) {
-            ledMatrix[1] = oldMatrix[1];
-            ledMatrix[2] = oldMatrix[2];
-            ledMatrix[3] = oldMatrix[3];
-            ledMatrix[4] = oldMatrix[4];
-            ledMatrix[5] = oldMatrix[5];
-        }
-    }
+
+    // Counter to wipe numbers on led matrix and revert back to stored led matrix
+    } else restoreMatrix();
 }
