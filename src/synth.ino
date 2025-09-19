@@ -159,8 +159,8 @@ int calculatePitch(byte channel, PitchType ptype)
     else                            temp = base[channel] + (100 - tune[channel]) + offsetNote[channel];
 
     // lower the noise (1 oct), 
-    // substract current (max 16) noisefreq steps for each chip
-    if (useNoise) temp -= 12 + (channel < 4 ? noiseFreq[0] : noiseFreq[1]); 
+    // substract current (max 31) noisefreq steps for each chip, and -3 halftones correction!
+    if (useNoise) temp -= 12 + (channel < 4 ? noiseFreq[0] : noiseFreq[1]) -3;
 
     // clock frequency correction
     if (clockType != CLOCK_LOW) temp--; // -= HIGH CLOCK ADAPTIONS =-
