@@ -359,7 +359,7 @@ void showMatrixedNumber(byte value)
 //  value = last - col (of row)
 //
 
-    if (displaycc >= MAX_LEDPICCOUNT) copyMatrixAndNumber();
+    if (displaycc >= MAX_LEDPICCOUNT) copyDisplay();
 
     displaycc = 0;
 
@@ -395,17 +395,6 @@ void showMatrixedNumber(byte value)
     */
 }
 
-void copyMatrixAndNumber()
-{
-    oldNumber = ledNumber;
-
-    oldMatrix[1] = ledMatrix[1];
-    oldMatrix[2] = ledMatrix[2];
-    oldMatrix[3] = ledMatrix[3];
-    oldMatrix[4] = ledMatrix[4];
-    oldMatrix[5] = ledMatrix[5];
-}
-
 void restoreMatrix()
 {
     if (displaycc != 20000) {
@@ -416,4 +405,58 @@ void restoreMatrix()
         ledMatrix[4] = oldMatrix[4];
         ledMatrix[5] = oldMatrix[5];
     }
+}
+
+void copyDisplay()
+{
+    oldNumber = ledNumber;
+
+    oldMatrix[1] = ledMatrix[1];
+    oldMatrix[2] = ledMatrix[2];
+    oldMatrix[3] = ledMatrix[3];
+    oldMatrix[4] = ledMatrix[4];
+    oldMatrix[5] = ledMatrix[5];
+}
+
+void resetDisplay()
+{
+    ledNumber = 0;
+
+    ledMatrix[1] = 0;
+    ledMatrix[2] = 0;
+    ledMatrix[3] = 0;
+    ledMatrix[4] = 0;
+    ledMatrix[5] = 0;
+}
+
+void copyAndResetDisplay()
+{
+    copyDisplay();
+    resetDisplay();
+}
+
+void restoreDisplay()
+{
+    ledNumber = oldNumber;
+
+    displaycc = 0;
+    restoreMatrix();
+}
+
+void setPoint(byte row, byte col)
+{
+    if (row && row < 6 && col && col < 7)
+        ledMatrix[row] |= (B00000001 << (col-1));
+}
+
+void clrPoint(byte row, byte col)
+{
+    if (row && row < 6 && col && col < 7)
+        ledMatrix[row] &= ~ (B00000001 << (col-1));
+}
+
+void tglPoint(byte row, byte col)
+{
+    if (row && row < 6 && col && col < 7)
+        ledMatrix[row] ^= (B00000001 << (col-1));
 }

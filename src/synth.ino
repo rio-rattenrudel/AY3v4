@@ -164,7 +164,7 @@ int calculatePitch(byte channel, PitchType ptype)
 
     // clock frequency correction
     if (clockType != CLOCK_LOW) temp--; // -= HIGH CLOCK ADAPTIONS =-
-                                        // -1, because it shifts down a note for 2MHz vs 500Khz
+                                        // -1, because it shifts down a halftone for ~2MHz vs 500Khz
 #if CLOCK_LOW_EMU
     else temp -= useEnvelope ? 48 : 24; // -= LOW CLOCK ADAPTIONS =-
                                         // -24 corresponding      to version 3.4 (notes)

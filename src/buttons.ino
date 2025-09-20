@@ -192,7 +192,7 @@ void buttPressed(int pin, int state)
                                 // update state
                                 encoderMoved(0);
 
-                                if (displaycc >= MAX_LEDPICCOUNT) copyMatrixAndNumber();
+                                if (displaycc >= MAX_LEDPICCOUNT) copyDisplay();
 
                                 byte m = pressedRow == 3 ? noiseMode : envMode;
 
@@ -265,7 +265,7 @@ void buttPressed(int pin, int state)
                             // update state
                             encoderMoved(0);
 
-                            if (displaycc >= MAX_LEDPICCOUNT) copyMatrixAndNumber();
+                            if (displaycc >= MAX_LEDPICCOUNT) copyDisplay();
 
                             // roll voice mode [E V T]
                             voiceMode++;
@@ -376,7 +376,7 @@ void buttPressed(int pin, int state)
                         seqPressed = 1;
                         countDown = 9;
 
-                        copyMatrixAndNumber();
+                        copyDisplay();
                         encoderMoved(0);
                         break;
 

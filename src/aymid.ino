@@ -368,14 +368,24 @@ void handleAymidFrameUpdate(const byte* buffer) {
 
     bool pitchUpdate[AY3VOICES];
 
-    // not running? enable ..
+    // enable if not running
     if (!aymidState.enabled) {
+        copyAndResetDisplay();
         aymidState.enabled = true;
         initializeAY3s();
         aymidRestore(-1); // TODO
     }
 
-    // TODO - ANY DISPLAY UPDATE FLAGS
+    //
+    // ANY DISPLAY UPDATE FLAGS HERE
+    //
+
+    // toggle incoming indicator
+    tglPoint(5, 6);
+
+    //
+    //
+    //
 
     // Default - no pitches received
     for (byte i = 0; i < AY3VOICES; i++) {
@@ -404,20 +414,6 @@ void handleAymidFrameUpdate(const byte* buffer) {
                     // MSB was set
                     data += 0x80;
                 }
-
-// debugging enable register R7 (all off)
-/*if (maskByte == 1 && bit == 0) {
-
-newMaskBytes[0][maskByte] |= field;
-newAY3Data[0][reg] = B11111111;
-newMaskBytes[1][maskByte] |= field;
-newAY3Data[1][reg] = B11111111;
-
-// Move to next register in AYMID message
-field <<= 1;
-reg++;
-continue;
-}*/
 
                 assert(reg < AY3_REGISTERS);
 
@@ -528,6 +524,7 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
         case 0x4c:
             // Start play
             if (!aymidState.enabled) {
+                copyAndResetDisplay();
                 aymidState.enabled = true;
                 initializeAY3s();
                 aymidRestore(-1); // TODO
@@ -540,6 +537,9 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
             // reset registers raw, so remix state is kept
             aymidState.enabled = false;
             aymidResetAY3Chip(-1);
+
+            // stop incoming indicator
+            clrPoint(5, 6);
             break;
 
         case 0x4f:
