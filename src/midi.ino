@@ -333,13 +333,15 @@ void receivedNote(byte channel, byte note, byte vel)
                 base[1] = base[2] = base[3] = base[4] = base[5] = base[6] = note;
                 handleBend(1, bender);
 
-                if (held[MASTER] == 1)
-                {
+                if (held[MASTER] == 1) {
                     preparePitches();
 
                     // update pitch channel 1..6 (a, b, c, d, e, f)
                     for (byte channel = 1; channel < 7; channel++)
                         assignChannelPitch(channel);
+
+                    // exceed arp counter (reset)
+                    arpcc = 0x0400;
                 }
             }
         }
@@ -378,6 +380,9 @@ void receivedNote(byte channel, byte note, byte vel)
 
                 // update pitch
                 assignChannelPitch(s);
+
+                // exceed arp counter (reset)
+                if (held[s] == 1) arpcc = 0x0400;
 
             // note off
             } else {
