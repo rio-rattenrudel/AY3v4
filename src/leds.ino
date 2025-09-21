@@ -27,8 +27,8 @@ void ledTickAymid()
                 PORTC = maskC;
                 miniDelay();
 
-                if      (mode == 1) { maskB = B11101111; maskC = B10000000; }
-                else if (mode == 2) { maskB = B11110111; maskC = B10000000; }
+                maskB = aymidState.incomingInd ? B11111111 : (mode == 1 ? B11101111 : B11110111); 
+                maskC = B10000000;
 
                 PORTB = maskB;
                 PORTC = maskC;
@@ -38,85 +38,24 @@ void ledTickAymid()
 
         case 1: // LEDMATRIX
 
-
                 //
-                // VOICE
-                //
-
-                if (flippedN && false) { // +condition
-                    if (ledMatrix[1] != 0)  maskC = 0;
-                    else                    maskC = B00111111;
-                } else                      maskC = ledMatrix[1];
-
-                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[1];
-
-                PORTB = B11111110; // set pin
-                PORTC = maskC;
-                miniDelay();
-
-
-                //
-                // LFO / ARP
+                // ROW, COL HANDLING
                 //
 
-                if (flippedN && false) { // +condition
-                    if (ledMatrix[2] != 0)  maskC = 0;
-                    else                    maskC = B00111111;
-                } else                      maskC = ledMatrix[2];
+                for (byte i = 1; i < 6; i++) {
+                    byte line = ledMatrix[i];
 
-                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[2];
+                    if (flippedN && pressedRow == i) { // +condition
+                        if ((line & 0x20) != 0) maskC = line & B00000111;
+                        else                    maskC = line | B00100000;
+                    } else                      maskC = line;
 
-                PORTB = B11111101; // set pin
-                PORTC = maskC;
-                miniDelay();
+                    if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[i];
 
-
-                //
-                // NOISE
-                //
-
-                if (flippedN && false) { // +condition
-                    if (ledMatrix[3] != 0)  maskC = 0;
-                    else                    maskC = B00111111;
-                } else                      maskC = ledMatrix[3];
-
-                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[3];
-
-                PORTB = B11111011; // set pin
-                PORTC = maskC;
-                miniDelay();
-
-
-                //
-                // ENVELOPE
-                //
-
-                if (flippedN && false) { // +condition
-                    if (ledMatrix[4] != 0)  maskC = 0;
-                    else                    maskC = B00111111;
-                } else                      maskC = ledMatrix[4];
-
-                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[4];
-
-                PORTB = B11110111; // set pin
-                PORTC = maskC;
-                miniDelay();
-
-
-                //
-                // SEQUENCER
-                //
-
-                if (flippedN && false) { // +condition
-                    if (ledMatrix[5] != 0)  maskC = 0;
-                    else                    maskC = B00111111;
-                } else                      maskC = ledMatrix[5];
-
-                if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[5];
-
-                PORTB = B11101111; // set pin
-                PORTC = maskC;
-                miniDelay();
+                    PORTB = ~(B00000001 << (i-1)); // set pin
+                    PORTC = maskC;
+                    miniDelay();
+                }
                 break;
 
         default: // switch off
@@ -132,7 +71,7 @@ void ledTickAymid()
 void doLedMatrix()
 {
     // decide flasher's speed (2x or 1x - default)
-    byte speed = (pressedRow == 3 || pressedRow == 4) && selectedChip > -1 ? FLASHSPEED << 1 : FLASHSPEED;
+    byte speed = (pressedRow == 3 || pressedRow == 4) && selectedChip > -1 && !aymidState.enabled ? FLASHSPEED << 1 : FLASHSPEED;
 
     matrixFlasher += speed;
     if (matrixFlasher > 4000)

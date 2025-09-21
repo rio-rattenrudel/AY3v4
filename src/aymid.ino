@@ -99,13 +99,15 @@ struct aymidState_t {
 
     volatile long timer;
     volatile byte slowTimer;
+
+    bool incomingInd;
 };
 
 aymidState_t aymidState;
 
 
-#define AY3_TONA_PITCH_LO   0x00
-#define AY3_TONA_PITCH_HI   0x01
+#define AY3_TONEA_PITCH_LO  0x00
+#define AY3_TONEA_PITCH_HI  0x01
 
 #define AY3_NOISE           0x06
 #define AY3_MIXER           0x07
@@ -150,6 +152,8 @@ void aymidInit(int chip) { // TODO
 
     aymidState.isCleanMode = false;
     aymidState.slowTimer = 0;
+
+    aymidState.incomingInd = false;
 }
 
 /*
@@ -187,7 +191,7 @@ void aymidInitVoice(int chip, byte voice, InitState init) {
 void initializeAY3s() {
     // numerator (array size) / denominator (first element size) -> reg < 14bytes/1byte
     for (size_t reg = 0; reg < sizeof(aymidState.lastAY3values) / (sizeof(*aymidState.lastAY3values)); reg++) {
-        aymidState.lastAY3values[reg] = 0;
+        aymidState.lastAY3values[reg] = (reg == AY3_MIXER) ? 0xFF : 0;
     }
 
     //aymidState.lastAY3values[AY3_AMPA] = 0xF;
@@ -211,7 +215,7 @@ void setAY3Register(byte chip, byte address, byte data) {
     if (!chip) { // 1st chip
 
         // A B C (ignore C)
-        //if (address == AY3_TONA_PITCH_LO+4 || address == AY3_TONA_PITCH_HI+4) return;
+        //if (address == AY3_TONEA_PITCH_LO+4 || address == AY3_TONEA_PITCH_HI+4) return;
 
         // SYNCED
         AY3(address, data);
@@ -219,7 +223,7 @@ void setAY3Register(byte chip, byte address, byte data) {
     } else { // 2nd chip
 
         // A B C (ignore A)
-        //if (address == AY3_TONA_PITCH_LO || address == AY3_TONA_PITCH_HI) return;
+        //if (address == AY3_TONEA_PITCH_LO || address == AY3_TONEA_PITCH_HI) return;
 
         // SYNCED
         AY32(address, data);
@@ -242,6 +246,7 @@ void updateLastAY3Values(int chip) {
 void aymidRestore(int chip) {
     aymidInit(chip);
     updateLastAY3Values(chip);
+
     //showFilterModeLEDs(aymidState.lastAY3values[SID_FILTER_MODE_VOLUME]);
     //showFilterResoLEDs(aymidState.lastAY3values[SID_FILTER_RESONANCE_ROUTING]);
     //showFilterRouteLEDs(aymidState.lastAY3values[SID_FILTER_RESONANCE_ROUTING]);
@@ -253,9 +258,10 @@ void aymidUpdatePitch(bool pitchUpdate[], byte maskBytes[], byte dataBytes[], by
         if (pitchUpdate[i]) {
 
             // Current original pitch
-            long pitch = (aymidState.lastAY3values[AY3_TONA_PITCH_HI + 2 * i] << 8) +
-                         aymidState.lastAY3values[AY3_TONA_PITCH_LO + 2 * i];
-/*
+            long pitch = (aymidState.lastAY3values[AY3_TONEA_PITCH_HI + 2 * i] << 8) +
+                         aymidState.lastAY3values[AY3_TONEA_PITCH_LO + 2 * i];
+
+/* TODO:    // THERAPSID CODE, which can be used as a guide for AY3 fine-tuning
             // Calculate fine tune, about +/- 53 cents, range -80 to 28 cents to adjust
             // for C64 PAL vs Therapchip clock differences. // TODO....
             int fine = aymidState.isCleanMode ? FINETUNE_0_CENTS : aymidState.adjustFine[chip][i];
@@ -273,6 +279,7 @@ void aymidUpdatePitch(bool pitchUpdate[], byte maskBytes[], byte dataBytes[], by
             // Scale down to even octave if pitch is higher than possible
             while (pitch > 4096) pitch >>= 1;
 */
+
             // Store in AYMID structure (2 bytes per voice)
             dataBytes[i * 2] = pitch & 0xff;
             dataBytes[i * 2 + 1] = (pitch >> 8) & 0x0f;
@@ -381,23 +388,17 @@ void handleAymidFrameUpdate(const byte* buffer) {
     //
 
     // toggle incoming indicator
-    tglPoint(5, 6);
+    aymidState.incomingInd = !aymidState.incomingInd;
 
-    //
-    //
-    //
 
     // Default - no pitches received
-    for (byte i = 0; i < AY3VOICES; i++) {
+    for (byte i = 0; i < AY3VOICES; i++)
         pitchUpdate[i] = false;
-    }
 
     // Clean out mask bytes to prepare for new values per chip
-    for (chip = 0; chip < AY3CHIPS; chip++) {
-        for (byte z = 0; z < 2; z++) {
+    for (chip = 0; chip < AY3CHIPS; chip++)
+        for (byte z = 0; z < 2; z++)
             newMaskBytes[chip][z] = 0;
-        }
-    }
 
     // Build up the 8-bit data from scattered pieces
     // First comes two 7-bit mask bytes, followed by two 7-bit MSB bytes,
@@ -454,9 +455,8 @@ void handleAymidFrameUpdate(const byte* buffer) {
     }
 
     // Recalculate pitches
-    for (chip = 0; chip < AY3CHIPS; chip++) {
+    for (chip = 0; chip < AY3CHIPS; chip++)
         aymidUpdatePitch(pitchUpdate, newMaskBytes[chip], newAY3Data[chip], chip);
-    }
 
     // Send all updated AY3 registers
     for (chip = 0; chip < AY3CHIPS; chip++) {
@@ -474,48 +474,75 @@ void handleAymidFrameUpdate(const byte* buffer) {
             }
         }
     }
-// TODO:
-/*          // Visualize everything - done after sound is produced to maximize good timing.
-    // Chip2 is shown if corresponding button held down by the user, otherwise chip1
-    chip = aymidState.selectedAY3s.b.sid2 && !aymidState.selectedAY3s.b.sid1 ? 1 : 0;
+}
 
-    // Refresh some seldom used registers, to display when AY3 select buttons held
-    if (aymidState.slowTimer == 0) {
-        aymidState.slowTimer = 4; // 39Hz/4 => 100ms response time
-        // Get the latest used SID register data
-        newAY3Data[chip][20] = sid_chips[chip].get_current_register(SID_FILTER_RESONANCE_ROUTING);
-        newAY3Data[chip][21] = sid_chips[chip].get_current_register(SID_FILTER_MODE_VOLUME);
-        newAY3Data[chip][19] = sid_chips[chip].get_current_register(SID_FILTER_CUTOFF_HI);
-        // Force masks on corresponding to the above
-        newMaskBytes[chip][2] |= 0x60;
-        newMaskBytes[chip][3] |= 0x01;
-    }
+/*
+ * Visualize everything on LEDs
+ *
+ * Will only actually show things if CPU load is low,
+ * to not drop frames.
+ */
+void visualizeAY3LEDs() {
 
-    // Do the actual LED update
-    reg = 0;
-    for (maskByte = 0; maskByte < 2; maskByte++) {
-        field = 0x01;
-        for (byte bit = 0; bit < 7; bit++) {
-            if ((newMaskBytes[chip][maskByte] & field) == field) {
-                data = newAY3Data[chip][reg];
-                if (reg == SID_FILTER_MODE_VOLUME) {
-                    showFilterModeLEDs(data);
-                } else if (reg == SID_FILTER_RESONANCE_ROUTING) {
-                    showFilterResoLEDs(data);
-                    showFilterRouteLEDs(data);
-                } else if (reg == SID_FILTER_CUTOFF_HI) {
-                    showFilterCutoffLEDs(data);
-                } else if ((reg - SID_VC_CONTROL) % 7 == 0) {
-                    showWaveformLEDs((reg - SID_VC_CONTROL) / 7, data);
-                }
-            }
+    byte data, amp[AY3VOICES], env[AY3VOICES];
 
-            // Move to next register in ASID struct
-            field <<= 1;
-            reg++;
+    // Visualize everything - done after sound is produced to maximize good timing.
+    // Initially, only display the data from the first chip (by default), 
+    // as both chips are mirrored, with the sole exception being when the 
+    // channels for the second chip are swapped or other diffs need to be made visible.
+
+    // When most of the MIDI buffer is empty it is safe to spend time on updating LEDs
+    if (Serial.available() < 4) {
+
+        //
+        // Get the latest used AY3 register data
+        //
+
+        // GET AMP & ENV for A, B, C
+        data = ay3Reg1Last[AY3_AMPA];
+        amp[0] = data & 0x07;
+        env[0] = data & 0x08;
+
+        data = ay3Reg1Last[AY3_AMPB];
+        amp[1] = data & 0x07;
+        env[1] = data & 0x08;
+
+        data = ay3Reg1Last[AY3_AMPC];
+        amp[2] = data & 0x07;
+        env[2] = data & 0x08;
+
+        // GET MIXER
+        data = ay3Reg1Last[AY3_MIXER];
+
+        // CHECK VOICES
+        for (byte voice = 1; voice <= AY3VOICES; voice++) {
+
+            byte c = voice-1;                       // channel idx
+            byte t = (data & (1 <<  c))     == 0;   // mixer tone flag
+            byte n = (data & (1 << (c+3)))  == 0;   // mixer noise flag
+
+            if (amp[c] && t)    setPoint(1, voice);
+            else                clrPoint(1, voice);
+
+            if (n)              setPoint(3, voice);
+            else                clrPoint(3, voice);
+
+            if (env[c])         setPoint(4, voice);
+            else                clrPoint(4, voice);
         }
+
+        // GET ENV SHAPE
+        data = ay3Reg1Last[AY3_ENVTYPE];
+
+        if (data == B0000) ledNumber = 1;
+        if (data == B0100) ledNumber = 2;
+        if (data == B1000) ledNumber = 3;
+        if (data == B1010) ledNumber = 4;
+        if (data == B1011) ledNumber = 5;
+        if (data == B1100) ledNumber = 6;
+        if (data == B1101) ledNumber = 7;
+        if (data == B1110) ledNumber = 8;
     }
-*/
 }
 
 void aymidProcessMessage(const byte* buffer, unsigned int size) {
@@ -536,10 +563,8 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
             // Stop playback
             // reset registers raw, so remix state is kept
             aymidState.enabled = false;
+            aymidState.incomingInd = false;
             aymidResetAY3Chip(-1);
-
-            // stop incoming indicator
-            clrPoint(5, 6);
             break;
 
         case 0x4f:
@@ -555,7 +580,8 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
             // handle with skipped header
             handleAymidFrameUpdate(&buffer[3]);
 
-            // LED visualization
+            // Visualize changes - done after sound is produced to maximize good timing.
+            visualizeAY3LEDs();
             break;
     }
 }
@@ -580,6 +606,9 @@ void aymidResetAY3Chip(int chip) {
     // clear bits
     initializeAY3s();
 
-    // update chips
+    // clear cache
     updateLastAY3Values(chip);
+
+    // clear display
+    resetDisplay();
 }

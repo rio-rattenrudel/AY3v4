@@ -91,18 +91,23 @@ void buttPressedAymid(int pin, int state)
             //
 
             case 8:     // ROW 1: VOICE
+                        pressedRow = pressedRow == 1 ? 0 : 1;
                         break;
 
             case 5:     // ROW 2: LFO/ARP
+                        pressedRow = pressedRow == 2 ? 0 : 2;
                         break;
 
             case 10:    // ROW 3: NOISE
+                        pressedRow = pressedRow == 3 ? 0 : 3;
                         break;
 
             case 7:     // ROW 4: ENV
+                        pressedRow = pressedRow == 4 ? 0 : 4;
                         break;
 
             case 4:     // ROW 5: SEQ
+                        pressedRow = pressedRow == 5 ? 0 : 5;
                         break;
 
             //
@@ -143,13 +148,9 @@ void buttPressedAymid(int pin, int state)
             // MATRIX COLS
             //
 
-            case 4:     break;
-
             //
             // MATRIX ROWS
             //
-
-            case 8:     break;
         }
     }
 }
