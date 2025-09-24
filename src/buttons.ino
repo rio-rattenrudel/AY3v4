@@ -109,27 +109,14 @@ byte indexFromPin(int pin) {
 
 void buttPressedAymid(int pin, int state)
 {
-    byte index = indexFromPin(pin);
-    byte chip;
+    byte index  = indexFromPin(pin);
+    int chip    = -1; // default all
+    int voice   = -1; // default all
 
-    bool all = false;
-
-    // Find out what chips are selected
-    // If one pressed - execute actions only on that chip
-    // If all active  - execute chip 0 then copy to other chips (executing actions if needed)
-
-    if (aymidState.selectedAY3s.all == 0) {
-
-        // All chips should be affected
-        all = true;
-        chip = 0;
-
-    } else {
-
-        // One chip selected
+    // find out what chips are selected
+    if (aymidState.selectedAY3s.selection) {
         if      (aymidState.selectedAY3s.b.AY3 && !aymidState.selectedAY3s.b.AY32)  chip = 0;
-        else if (aymidState.selectedAY3s.b.AY3 && !aymidState.selectedAY3s.b.AY32)  chip = 1;
-        else                                                                        chip = 2;
+        else if (aymidState.selectedAY3s.b.AY32 && !aymidState.selectedAY3s.b.AY3)  chip = 1;
     }
 
     // pressed
@@ -141,7 +128,8 @@ void buttPressedAymid(int pin, int state)
             // ENCODER SWITCH
             //
 
-            case 1:     break;
+            case 1:     aymidState.isEncMode = true;
+                        break;
 
             //
             // MATRIX ROWS
@@ -154,6 +142,18 @@ void buttPressedAymid(int pin, int state)
             case 4:     // ROW 5: SEQ
 
                         selectRow = index+1;
+
+                        if (pin == 4) {
+                            aymidState.isCtrlMode = true;
+                        } else {
+                            if (aymidState.isShiftMode) {
+                                switch (selectRow) {
+                                    case 1: aymidRestoreTones(chip);     break;
+                                    case 3: aymidRestoreNoises(chip);    break;
+                                    case 4: aymidRestoreEnvs(chip);      break;
+                                }
+                            }
+                        }
                         break;
 
             //
@@ -164,21 +164,26 @@ void buttPressedAymid(int pin, int state)
             case 2:     // CHANNEL: b
             case 6:     // CHANNEL: c
 
-                        switch (pressedRow) {
-                            case 1: updateTriStateButtonAymid(chip, index, all, aymidState.overrideTone, TGL_AY3FILE_OFF);  break;
-                            case 3: updateTriStateButtonAymid(chip, index, all, aymidState.overrideNoise, TGL_AY3FILE_OFF); break;
-                            case 4: updateTriStateButtonAymid(chip, index, all, aymidState.overrideEnv, TGL_AY3FILE_OFF);   break;
-                        }   
+                        if (aymidState.isCtrlMode) {
+                            aymidRestoreVoice(chip, index, InitState::ALL);
+                        } else {
+                            switch (pressedRow) {
+                                case 1: aymidOverrideVoice(chip, index, aymidState.overrideTone, aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF); break;
+                                case 3: aymidOverrideVoice(chip, index, aymidState.overrideNoise,aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF); break;
+                                case 4: aymidOverrideVoice(chip, index, aymidState.overrideEnv,  aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF); break;
+                            }
+                        }
                         break;
 
             case 9:     // CHANNEL: d
+                        aymidRestoreVoice(chip, voice, InitState::ALL);
+                        break;
+
             case 12:    // CHANNEL: e
+                        break;
+
             case 3:     // CHANNEL: f
-                        switch (pressedRow) {
-                            case 1: aymidRestoreVoice(all ? -1 : chip, index-3, InitState::TONE);       break;
-                            case 3: aymidRestoreVoice(all ? -1 : chip, index-3, InitState::NOISE);      break;
-                            case 4: aymidRestoreVoice(all ? -1 : chip, index-3, InitState::ENVELOPE);   break;
-                        }
+                        aymidState.isShiftMode = true;
                         break;
         }
 
@@ -191,15 +196,28 @@ void buttPressedAymid(int pin, int state)
             // ENCODER SWITCH
             //
 
-            case 1:     break;
+            case 1:     aymidState.isEncMode = false;
+                        break;
+
+            //
+            // MATRIX ROWS
+            //
+
+            case 4:     // ROW 5: SEQ
+                        aymidState.isCtrlMode = false;
+                        break;
 
             //
             // MATRIX COLS
             //
 
-            //
-            // MATRIX ROWS
-            //
+            case 12:    // CHANNEL: e
+                        aymidState.isAltMode = !aymidState.isAltMode;
+                        break;
+
+            case 3:     // CHANNEL: f
+                        aymidState.isShiftMode = false;
+                        break;
         }
     }
 }

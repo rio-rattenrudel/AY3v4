@@ -44,9 +44,11 @@ void ledTickAymid()
 
                 for (byte i = 1; i < 6; i++) {
                     byte line = ledMatrix[i];
+                    byte add2 = aymidState.isAltMode;
 
                     if (flippedN && pressedRow == i) { // +condition
                         if ((line & 0x20) != 0) maskC = line & B00000111;
+                        else if (add2)          maskC = line | B00110000;
                         else                    maskC = line | B00100000;
                     } else                      maskC = line;
 
