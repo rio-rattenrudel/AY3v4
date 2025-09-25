@@ -84,6 +84,7 @@ enum class PitchType { TONE, NOISE, ENVELOPE };
 
 #define TGL_AY3FILE_OFF 1
 #define TGL_AY3FILE_ON  2
+#define RST_AY3FILE     3
 
 
 // debug

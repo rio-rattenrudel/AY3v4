@@ -143,15 +143,14 @@ void buttPressedAymid(int pin, int state)
 
                         selectRow = index+1;
 
-                        if (pin == 4) {
-                            aymidState.isCtrlMode = true;
-                        } else {
-                            if (aymidState.isShiftMode) {
-                                switch (selectRow) {
-                                    case 1: aymidRestoreTones(chip);     break;
-                                    case 3: aymidRestoreNoises(chip);    break;
-                                    case 4: aymidRestoreEnvs(chip);      break;
-                                }
+                        // seq button - ctrl
+                        if (pin == 4) aymidState.isCtrlMode = true;
+
+                        if (aymidState.isShiftMode || pressedRow == selectRow) {
+                            switch (selectRow) {
+                                case 1: aymidToggleTones(chip,  aymidState.isShiftMode); break;
+                                case 3: aymidToggleNoises(chip, aymidState.isShiftMode); break;
+                                case 4: aymidToggleEnvs(chip,   aymidState.isShiftMode); break;
                             }
                         }
                         break;
@@ -164,7 +163,7 @@ void buttPressedAymid(int pin, int state)
             case 2:     // CHANNEL: b
             case 6:     // CHANNEL: c
 
-                        if (aymidState.isCtrlMode) {
+                        if (pressedRow == 5) {
                             aymidRestoreVoice(chip, index, InitState::ALL);
                         } else {
                             switch (pressedRow) {
@@ -183,6 +182,7 @@ void buttPressedAymid(int pin, int state)
                         break;
 
             case 3:     // CHANNEL: f
+                        //selectRow = pressedRow < 4 ? pressedRow + 1 : 1;
                         aymidState.isShiftMode = true;
                         break;
         }
