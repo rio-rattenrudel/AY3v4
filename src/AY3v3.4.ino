@@ -3,7 +3,7 @@
 #include <assert.h>
 
 /***********************************
-    -= AY3 version 4 (0.60) =-
+    -= AY3 version 4 (0.70) =-
         + synth engine overhaul
         + AYMID support
 
@@ -12,7 +12,6 @@
 
 enum class InitState { ALL, TONE, NOISE, MIXER, AMP, PITCH, ENVELOPE, ENVTYPE, ALLSTATES };
 enum class ChannelState { AY3FILE, ABC, ACB, BAC, BCA, CAB, CBA };
-enum class AmpState { AY3FILE, M, L3, L2, L1, L0 };
 enum class OverrideState { AY3FILE, ON, OFF };
 enum class PitchType { TONE, NOISE, ENVELOPE };
 
@@ -91,7 +90,7 @@ enum class PitchType { TONE, NOISE, ENVELOPE };
 
 #if TONETEST
     uint32_t cc         = 0;
-    byte fine           = 0xFF;     // whole byte
+    byte fine           = 0xff;     // whole byte
     byte cors           = 0x08;     // low nibble
 #endif
 
@@ -475,12 +474,12 @@ void setup()
     setAY3Register(0, 0, fine); // CH A
     setAY3Register(0, 1, cors); // CH A
     setAY3Register(0, 7, 0x08); // deactivate NOISE for CH A 
-    setAY3Register(0, 8, 0x0F); // VOL UP
+    setAY3Register(0, 8, 0x0f); // VOL UP
 
     setAY3Register(1, 2, fine); // CH B
     setAY3Register(1, 3, cors); // CH B
     setAY3Register(1, 7, 0x10); // deactivate NOISE for CH B 
-    setAY3Register(1, 9, 0x0F); // VOL UP
+    setAY3Register(1, 9, 0x0f); // VOL UP
 #endif
 }
 

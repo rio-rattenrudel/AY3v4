@@ -51,9 +51,11 @@ void potTickAymid()
                     break;
 
         case 1:     // 2 POT - [ NOISE ] - (LFO/ARP DEPTH)
-                    analogTemp = analogRead(A5) >> 5;
-                    if (analogTemp > (potLast[pot] + 1) || 
-                        analogTemp < (potLast[pot] - 1)) {
+                    analogTemp = analogRead(A5);
+                    if ((analogTemp >> 2) > (potLast[pot] + 1) || 
+                        (analogTemp >> 2) < (potLast[pot] - 1)) {
+
+                        ///// FULL SCALED /////
 
                         if (aymidState.isCtrlMode) {
 
@@ -68,6 +70,11 @@ void potTickAymid()
                                 aymidState.adjustNoisePeriod[chip] = POT_VALUE_TO_AYMID_NOISE_PERIOD(analogTemp);
                         }
 
+                        ///// CRUSHED SIZE /////
+
+                        // scale down to 8bit
+                        analogTemp >>= 2;
+
                         potLast[pot] = analogTemp;
                     }
                     break;
@@ -81,12 +88,25 @@ void potTickAymid()
                     if ((analogTemp >> 2) > (potLast[pot] + 1) || 
                         (analogTemp >> 2) < (potLast[pot] - 1)) {
 
+                        bool volumeControlled = pressedRow == 2;
+
                         ///// FULL SCALED /////
 
-                        // FINE TUNE
-                        if (aymidState.isCtrlMode)
-                            for (byte chip = 0; chip < AY3CHIPS; chip++)
-                                aymidState.adjustFine[chip][voice] = POT_VALUE_TO_AYMID_FINETUNE(analogTemp);
+                        if (volumeControlled) {
+
+                            // VOLUME
+                            for (byte chip = 0; chip < AY3CHIPS; chip++) {
+                                aymidState.adjustVolume[chip][voice] = POT_VALUE_TO_AYMID_VOLUME(analogTemp);
+                                aymidUpdateVolume(chip, voice);
+                            }
+
+                        } else {
+
+                            // FINE TUNE
+                            if (aymidState.isCtrlMode)
+                                for (byte chip = 0; chip < AY3CHIPS; chip++)
+                                    aymidState.adjustFine[chip][voice] = POT_VALUE_TO_AYMID_FINETUNE(analogTemp);
+                        }
 
                         ///// CRUSHED SIZE /////
 
@@ -94,7 +114,7 @@ void potTickAymid()
                         analogTemp >>= 2;
 
                         // OCTAVE
-                        if (!aymidState.isCtrlMode) {
+                        if (!volumeControlled && !aymidState.isCtrlMode) {
                             int8_t octave = getOctave(analogTemp);
 
                             for (byte chip = 0; chip < AY3CHIPS; chip++)

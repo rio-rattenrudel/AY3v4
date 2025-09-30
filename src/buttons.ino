@@ -152,6 +152,7 @@ void buttPressedAymid(int pin, int state)
                         if (aymidState.isShiftMode || pressedRow == selectRow) {
                             switch (selectRow) {
                                 case 1: aymidToggleTones(chip,  aymidState.isShiftMode); break;
+                                case 2: aymidToggleVolumes(chip,aymidState.isShiftMode); break; 
                                 case 3: aymidToggleNoises(chip, aymidState.isShiftMode); break;
                                 case 4: aymidToggleEnvs(chip,   aymidState.isShiftMode); break;
                             }
@@ -169,9 +170,10 @@ void buttPressedAymid(int pin, int state)
                         if (pressedRow == 5) aymidToggleVoice(chip, index, aymidState.isCtrlMode);
                         else {
                             switch (pressedRow) {
-                                case 1: aymidOverrideVoice(chip, index, aymidState.overrideTone, aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF); break;
-                                case 3: aymidOverrideVoice(chip, index, aymidState.overrideNoise,aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF); break;
-                                case 4: aymidOverrideVoice(chip, index, aymidState.overrideEnv,  aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF); break;
+                                case 1: aymidOverrideVoice(chip, index, aymidState.overrideTone, aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF);  break;
+                                case 2: aymidToggleVolume(chip, index);                                                                                     break;
+                                case 3: aymidOverrideVoice(chip, index, aymidState.overrideNoise,aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF);  break;
+                                case 4: aymidOverrideVoice(chip, index, aymidState.overrideEnv,  aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF);  break;
                             }
                         }
                         break;

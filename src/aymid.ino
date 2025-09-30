@@ -1,4 +1,4 @@
-//  AYMID player & remix routine 0.2
+//  AYMID player & remix routine 0.3
 //  --------------------------------
 //
 //  notes:
@@ -13,12 +13,14 @@
 //          - update these registers to 0 interferes with the LED matrix (CFG_CLOCKTYPE mode, LED matrix switches off)
 //
 //
-
+ 
+#define POT_VALUE_TO_AYMID_VOLUME(x) (rescaleLog(x >> 5, 0, 15, 0, 15))
 #define POT_VALUE_TO_AYMID_FINETUNE(x) (x >> 1)
 #define POT_VALUE_TO_AYMID_FINETUNE_ENV(x) (x << 1)
-#define POT_VALUE_TO_AYMID_NOISE_PERIOD(x) (31 - x)
+#define POT_VALUE_TO_AYMID_NOISE_PERIOD(x) (x >> 5)
 
-#define NOISE_DEFAULT 16
+#define VOLUME_AY3FILE  16
+#define NOISE_AY3FILE   32
 
 // AY_EMUL stereo separation (0..255) to REG (0..15) by >> 4:
 //
@@ -66,12 +68,11 @@ union selected_AY3s_t {
 struct aymidState_t {
     bool enabled;
 
-    bool muteVoice[AY3CHIPS][AY3VOICES]; // includes tone, noise, envelope
+    bool muteVoice[AY3CHIPS][AY3VOICES]; // includes tone, noise, envelope // unused
 
     ChannelState overrideChannel[AY3CHIPS];
     byte overrideEnvType[AY3CHIPS];
 
-    AmpState overrideAmp[AY3CHIPS][AY3VOICES];
     OverrideState overrideTone[AY3CHIPS][AY3VOICES];
     OverrideState overrideNoise[AY3CHIPS][AY3VOICES];
     OverrideState overrideEnv[AY3CHIPS][AY3VOICES];
@@ -80,6 +81,9 @@ struct aymidState_t {
     OverrideState overrideNoiseBuf[AY3CHIPS][AY3VOICES];
     OverrideState overrideEnvBuf[AY3CHIPS][AY3VOICES];
 
+    int adjustVolume[AY3CHIPS][AY3VOICES];
+    int adjustVolumeBuf[AY3CHIPS][AY3VOICES];
+
     int adjustOctave[AY3CHIPS][AY3VOICES];
     int adjustFine[AY3CHIPS][AY3VOICES];
 
@@ -87,7 +91,7 @@ struct aymidState_t {
     int adjustFineEnv[AY3CHIPS];
     byte adjustNoisePeriod[AY3CHIPS];
 
-    bool isRemixed[AY3CHIPS];
+    bool isRemixed[AY3CHIPS]; // unused
 
     selected_AY3s_t selectedAY3s;
 
@@ -97,15 +101,9 @@ struct aymidState_t {
     bool isCtrlMode;
     bool isEncMode;
 
-    bool isChipSelectionMode;
-/*  bool isCutoffAdjustModeScaling;
-    byte displayState;
-*/
+    bool isChipSelectionMode; // unused
 
     byte lastAY3values[AY3_REGISTERS];
-
-    volatile long timer;
-    volatile byte slowTimer;
 
     bool incomingInd;
     byte preparedEnvType;
@@ -186,7 +184,7 @@ void aymidInit(int chip) { // TODO
         aymidState.adjustOctaveEnv[chip] = 0;
         aymidState.adjustFineEnv[chip] = POT_VALUE_TO_AYMID_FINETUNE_ENV(POT_NOON);
 
-        aymidState.adjustNoisePeriod[chip] = NOISE_DEFAULT;
+        aymidState.adjustNoisePeriod[chip] = NOISE_AY3FILE;
 
         aymidState.isRemixed[chip] = false;
         //dotSet(chip, false); // TODO...GUI update
@@ -200,8 +198,6 @@ void aymidInit(int chip) { // TODO
     aymidState.isCleanMode = false;
     aymidState.isShiftMode = false;
     aymidState.isAltMode = false;
-
-    aymidState.slowTimer = 0;
 
     aymidState.incomingInd = false;
     aymidState.preparedEnvType = 0;
@@ -237,12 +233,13 @@ void aymidInitVoice(int chip, byte voice, InitState init) {
             aymidState.overrideEnv[chip][voice] = OverrideState::AY3FILE;
 
         if (initAmplitude)
-            aymidState.overrideAmp[chip][voice] = AmpState::AY3FILE;
+            aymidState.adjustVolume[chip][voice] = VOLUME_AY3FILE;
 
         if (initAll) {
             aymidState.overrideToneBuf[chip][voice] = OverrideState::AY3FILE;
             aymidState.overrideNoiseBuf[chip][voice] = OverrideState::AY3FILE;
             aymidState.overrideEnvBuf[chip][voice] = OverrideState::AY3FILE;
+            aymidState.adjustVolumeBuf[chip][voice] = VOLUME_AY3FILE;
         }
     }
 }
@@ -253,7 +250,7 @@ void aymidInitVoice(int chip, byte voice, InitState init) {
 void initializeAY3s() {
     // numerator (array size) / denominator (first element size) -> reg < 14bytes/1byte
     for (size_t reg = 0; reg < sizeof(aymidState.lastAY3values) / (sizeof(*aymidState.lastAY3values)); reg++) {
-        aymidState.lastAY3values[reg] = (reg == AY3_MIXER) ? 0xFF : 0;
+        aymidState.lastAY3values[reg] = (reg == AY3_MIXER) ? 0xff : 0;
     }
 
     //aymidState.lastAY3values[AY3_AMPA] = 0xF;
@@ -423,6 +420,9 @@ void aymidOverrideVoice(int chip, byte voice, OverrideState buttonState[][AY3VOI
     }
 }
 
+/*
+ * Restore envelope adjustments
+ */
 void aymidRestoreEnvelope(int chip) {
 
     byte first  = chip > -1 ? chip : 0;
@@ -437,13 +437,34 @@ void aymidRestoreEnvelope(int chip) {
     }
 }
 
+/*
+ * Restore noise period
+ */
 void aymidRestoreNoisePeriod(int chip) {
 
     byte first  = chip > -1 ? chip : 0;
     byte last   = chip > -1 ? chip : AY3CHIPS - 1;
 
     for (byte chip = first; chip <= last; chip++)
-        aymidState.adjustNoisePeriod[chip] = NOISE_DEFAULT;
+        aymidState.adjustNoisePeriod[chip] = NOISE_AY3FILE;
+}
+
+/*
+ * Restore volume adjustments
+ */
+void aymidRestoreVolume(int chip, int voice) {
+
+    byte first  = chip > -1 ? chip : 0;
+    byte last   = chip > -1 ? chip : AY3CHIPS - 1;
+
+    for (byte chip = first; chip <= last; chip++) {
+
+        byte first  = voice > -1 ? voice : 0;
+        byte last   = voice > -1 ? voice : AY3VOICES - 1;
+
+        for (byte voice = first; voice <= last; voice++)
+            aymidState.adjustVolume[chip][voice] = VOLUME_AY3FILE;
+    }
 }
 
 /*
@@ -552,6 +573,83 @@ void aymidCopyOverride( int chip, int voice,
 }
 
 /*
+ * Toggles a voice value (0 / value)
+ */
+void aymidToggleVoiceValueGte(int chip, int voice, int voiceValue[][AY3VOICES], byte value) {
+    byte first  = chip > -1 ? chip : 0;
+    byte last   = chip > -1 ? chip : AY3CHIPS - 1;
+
+    for (byte chip = first; chip <= last; chip++) {
+
+        byte first  = voice > -1 ? voice : 0;
+        byte last   = voice > -1 ? voice : AY3VOICES - 1;
+
+        for (byte voice = first; voice <= last; voice++)
+            voiceValue[chip][voice] = voiceValue[chip][voice] >= value ? 0 : value;
+    }
+}
+
+/*
+ * Buffers a voice value
+ */
+void aymidCopyVoiceValue(int chip, int voice, int voiceValue[][AY3VOICES], int voiceValueCopy[][AY3VOICES]) {
+
+    byte first  = chip > -1 ? chip : 0;
+    byte last   = chip > -1 ? chip : AY3CHIPS - 1;
+
+    for (byte chip = first; chip <= last; chip++) {
+
+        byte first  = voice > -1 ? voice : 0;
+        byte last   = voice > -1 ? voice : AY3VOICES - 1;
+
+        for (byte voice = first; voice <= last; voice++)
+            voiceValueCopy[chip][voice] = voiceValue[chip][voice];
+    }
+}
+
+/*
+ * Toggle "remix to restore" and "restore to mute", used when pressing lfo/arp button
+ */
+void aymidToggleVolume(int chip, int voice) {
+
+    bool isRemixed      = aymidDetectRemixVolume(chip, voice, aymidState.adjustVolume);
+    bool isRemixedBuf   = aymidDetectRemixVolume(chip, voice, aymidState.adjustVolumeBuf);
+
+    // detect: backup remix and reset
+    if (isRemixed) {
+        aymidCopyVoiceValue(chip, voice, aymidState.adjustVolume, aymidState.adjustVolumeBuf);
+        aymidInitState(chip, voice, InitState::AMP);
+
+    // detect copy: restore copy back
+    } else if (isRemixedBuf) {
+        aymidCopyVoiceValue(chip, voice, aymidState.adjustVolumeBuf, aymidState.adjustVolume);
+
+    // otherwise toggle turn off / AY3FILE
+    } else aymidToggleVoiceValueGte(chip, voice, aymidState.adjustVolume, VOLUME_AY3FILE);
+}
+
+/*
+ * Detects a remix volume of voices
+ */
+bool aymidDetectRemixVolume(int chip, int voice, int voiceValue[][AY3VOICES]) {
+
+    byte first  = chip > -1 ? chip : 0;
+    byte last   = chip > -1 ? chip : AY3CHIPS - 1;
+
+    for (byte chip = first; chip <= last; chip++) {
+
+        byte first  = voice > -1 ? voice : 0;
+        byte last   = voice > -1 ? voice : AY3VOICES - 1;
+
+        for (byte voice = first; voice <= last; voice++)
+            if (voiceValue[chip][voice] < VOLUME_AY3FILE)
+                return true;
+    }
+
+    return false;
+}
+
+/*
  * methods that affects a b c states for tone, noise, env 
  */
 
@@ -559,9 +657,10 @@ void aymidCopyOverride( int chip, int voice,
  * Restore the most important/seldom changed registers, used when
  * pressing shift (f) button within selected row: affects a b c
  */
-void aymidRestoreTones(int chip) {  aymidInitState(chip, -1, InitState::TONE); }
-void aymidRestoreNoises(int chip) { aymidInitState(chip, -1, InitState::NOISE); }
-void aymidRestoreEnvs(int chip) {   aymidInitState(chip, -1, InitState::ENVELOPE); }
+void aymidRestoreTones(int chip) {      aymidInitState(     chip, -1, InitState::TONE); }
+void aymidRestoreVolumes(int chip) {    aymidRestoreVolume( chip, -1); }
+void aymidRestoreNoises(int chip) {     aymidInitState(     chip, -1, InitState::NOISE); }
+void aymidRestoreEnvs(int chip) {       aymidInitState(     chip, -1, InitState::ENVELOPE); }
 
 /*
  * Toggle "remix to restore" or vice versa, used when
@@ -570,9 +669,24 @@ void aymidRestoreEnvs(int chip) {   aymidInitState(chip, -1, InitState::ENVELOPE
 void aymidToggleTones(int chip, bool asXOR) {
     aymidToggleState(chip, -1, InitState::TONE, aymidState.overrideTone, aymidState.overrideToneBuf, asXOR); 
 }
+
+void aymidToggleVolumes(int chip, bool asXOR) {
+
+    if (asXOR) {
+        byte first  = chip > -1 ? chip : 0;
+        byte last   = chip > -1 ? chip : AY3CHIPS - 1;
+
+        for (byte chip = first; chip <= last; chip++)
+            for (byte voice = 0; voice < AY3VOICES; voice++)
+                aymidToggleVolume(chip, voice);
+
+    } else aymidToggleVolume(chip, -1);
+}
+
 void aymidToggleNoises(int chip, bool asXOR) {
     aymidToggleState(chip, -1, InitState::NOISE, aymidState.overrideNoise, aymidState.overrideNoiseBuf, asXOR);
 }
+
 void aymidToggleEnvs(int chip, bool asXOR) {
     aymidToggleState(chip, -1, InitState::ENVELOPE, aymidState.overrideEnv, aymidState.overrideEnvBuf, asXOR);
 }
@@ -640,6 +754,9 @@ void aymidOverrideEnvType(int chip, int8_t dir, bool prepare) {
     }
 }
 
+/*
+ * Send direct EnvType
+ */
 void sendImmediateEnvType(int chip) {
 
     if (aymidState.preparedEnvType) {
@@ -662,6 +779,9 @@ void sendImmediateEnvType(int chip) {
     }
 }
 
+/*
+ * Restore all finetunes except noise (TONE, ENV)
+ */
 void aymidRestoreFinetunes(int chip, int voice) {
 
     byte first  = chip > -1 ? chip : 0;
@@ -676,6 +796,42 @@ void aymidRestoreFinetunes(int chip, int voice) {
             aymidState.adjustFine[chip][voice] = POT_VALUE_TO_AYMID_FINETUNE(POT_NOON);
 
         aymidState.adjustFineEnv[chip] = POT_VALUE_TO_AYMID_FINETUNE_ENV(POT_NOON);
+    }
+}
+
+/*
+ * Adjust the volume according to remix-parameter
+ */
+void aymidUpdateVolume(int chip, int voice) {
+    if (aymidState.isCleanMode) return;
+
+    byte first  = chip > -1 ? chip : 0;
+    byte last   = chip > -1 ? chip : AY3CHIPS - 1;
+
+    for (byte chip = first; chip <= last; chip++) {
+
+        byte first  = voice > -1 ? voice : 0;
+        byte last   = voice > -1 ? voice : AY3VOICES - 1;
+
+        for (byte voice = first; voice <= last; voice++) {
+
+            byte reg = AY3_AMPA + voice;
+
+            // Save currently used env enable flag (used by same register)
+            byte data = ay3Reg1Last[reg] & 0x10;
+
+            // Calc new adjusted volume
+            int volume = aymidState.adjustVolume[chip][voice];
+            
+            // Works in a range of 0..x limit to 16 (NOON)
+            volume = volume > VOLUME_AY3FILE ? VOLUME_AY3FILE : volume;
+            volume = (aymidState.lastAY3values[reg] & 0x0f) + volume - VOLUME_AY3FILE;
+            volume = max(0, min(15, volume));
+            data |= volume;
+
+            // send out data
+            sendImmediateAY3Value(chip, reg, data);
+        }
     }
 }
 
@@ -740,7 +896,7 @@ void aymidUpdatePitch(bool pitchUpdate[], byte maskBytes[], byte dataBytes[], by
             // Set mask bits accordingly per voice
             switch (i) {
                 case 0: maskBytes[0] |= 0x03; break;
-                case 1: maskBytes[0] |= 0x0C; break;
+                case 1: maskBytes[0] |= 0x0c; break;
                 case 2: maskBytes[0] |= 0x30; break;
             }
         }
@@ -749,9 +905,13 @@ void aymidUpdatePitch(bool pitchUpdate[], byte maskBytes[], byte dataBytes[], by
 
 bool runNoise(byte chip, byte voice, byte* data) {
 
-    // set period directly or restore by NOISE_DEFAULT
-    if (aymidState.adjustNoisePeriod[chip] != NOISE_DEFAULT)
-        *data = aymidState.adjustNoisePeriod[chip];
+    // Noise (limit to 32)
+    byte noise = aymidState.adjustNoisePeriod[chip];
+    if (noise < NOISE_AY3FILE) {
+        noise = NOISE_AY3FILE - noise;
+        noise = max(0, min(31, noise));
+        *data = noise;
+    }
 
     return true;
 }
@@ -786,6 +946,14 @@ bool runMixer(byte chip, byte voice, byte* data) {
 }
 
 bool runAmp(byte chip, byte voice, byte* data) {
+
+    // Volume (limit to 16)
+    int volume = aymidState.adjustVolume[chip][voice];
+    if (volume < VOLUME_AY3FILE) {
+        volume = (*data & 0x0f) + volume - VOLUME_AY3FILE;
+        volume = max(0, min(15, volume));
+        *data = (*data & 0xf0) | volume;
+    }
 
     // Env
     if (aymidState.overrideEnv[chip][voice] == OverrideState::ON) {
@@ -981,7 +1149,7 @@ void handleAymidFrameUpdate(const byte* buffer) {
  */
 void visualizeAY3LEDs() {
 
-    byte data, amp[AY3VOICES], env[AY3VOICES];
+    byte chip = 0, data, amp[AY3VOICES], env[AY3VOICES], vol[AY3VOICES];
 
     // Visualize everything - done after sound is produced to maximize good timing.
     // Initially, only display the data from the first chip (by default), 
@@ -992,20 +1160,28 @@ void visualizeAY3LEDs() {
     if (Serial.available() < 4) {
 
         //
+        // Get volume adjustment (limiter)
+        //
+
+        // Works in a range of 0..x limit to 16 (NOON)
+        for (byte voice = 0; voice < AY3VOICES; voice++)
+            vol[voice] = aymidState.adjustVolume[chip][voice] >= VOLUME_AY3FILE ? 0 : 1;
+
+        //
         // Get the latest used AY3 register data
         //
 
         // GET AMP & ENV for A, B, C
         data = ay3Reg1Last[AY3_AMPA];
-        amp[0] = data & 0x0F;
+        amp[0] = data & 0x0f;
         env[0] = data & 0x10;
 
         data = ay3Reg1Last[AY3_AMPB];
-        amp[1] = data & 0x0F;
+        amp[1] = data & 0x0f;
         env[1] = data & 0x10;
 
         data = ay3Reg1Last[AY3_AMPC];
-        amp[2] = data & 0x0F;
+        amp[2] = data & 0x0f;
         env[2] = data & 0x10;
 
         // GET MIXER
@@ -1020,6 +1196,9 @@ void visualizeAY3LEDs() {
 
             if (amp[i] && t)    setPoint(1, channel);
             else                clrPoint(1, channel);
+
+            if (vol[i])         setPoint(2, channel);
+            else                clrPoint(2, channel);
 
             if (n)              setPoint(3, channel);
             else                clrPoint(3, channel);
@@ -1045,7 +1224,7 @@ void visualizeAY3LEDs() {
         }
 
         // cache previous envtype
-        if (aymidState.overrideEnvType[0] == 0)
+        if (aymidState.overrideEnvType[chip] == 0)
             oldNumber = ledNumber;
     }
 }
@@ -1090,18 +1269,6 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
             // Visualize changes - done after sound is produced to maximize good timing.
             visualizeAY3LEDs();
             break;
-    }
-}
-
-/* Called at 10kHz */
-void aymidTick()
-{
-    aymidState.timer++;
-    if ((byte)aymidState.timer == 0) {
-        // Slow timer decreased at about 39Hz
-        if (aymidState.slowTimer > 0) {
-            aymidState.slowTimer--;
-        }
     }
 }
 
