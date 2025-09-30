@@ -5,6 +5,8 @@
 int matrixFlasher;
 bool flippedS = false;
 bool flippedN = false;
+byte runnercc = 0;
+byte runnerln = 0;
 
 void ledTickAymid()
 {
@@ -29,7 +31,9 @@ void ledTickAymid()
                 PORTC = maskC;
                 miniDelay();
 
-                maskB = aymidState.incomingInd ? B11111111 : (mode == 1 ? B11101111 : B11110111); 
+                maskB = B11111111; 
+                if (!aymidState.incomingInd)    maskB &= ~B00010000; // preset led
+                //if (aymidState.XXX)           maskB &= ~B00001000; // bank led
                 maskC = B10000000;
 
                 PORTB = maskB;
@@ -44,6 +48,8 @@ void ledTickAymid()
                 // ROW, COL HANDLING
                 //
 
+                if (!runnercc) runnerln++;
+
                 for (byte i = 1; i < 6; i++) {
                     byte line = ledMatrix[i];
                     byte add2 = aymidState.isAltMode;
@@ -54,12 +60,27 @@ void ledTickAymid()
                         else                    maskC = line | B00100000;
                     } else                      maskC = line;
 
+                    if (aymidState.isCleanMode && i < 5) {
+
+                        // runs down the line (stellar trail)
+                        if (i > runnerln - 1 && i < runnerln + 1) {
+
+                            // incoming indicator 
+                            if (aymidState.incomingInd) maskC &= ~B00001000;
+                            else                        maskC |=  B00001000;
+                        }
+                    }
+
                     if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[i];
 
                     PORTB = ~(B00000001 << (i-1)); // set pin
                     PORTC = maskC;
                     miniDelay();
                 }
+
+                runnercc += aymidState.incomingInd;
+                if (runnercc > 32)  runnercc = 0;
+                if (runnerln > 4)   runnerln = 0;
                 break;
 
         default: // switch off

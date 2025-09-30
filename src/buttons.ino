@@ -179,7 +179,12 @@ void buttPressedAymid(int pin, int state)
                         break;
 
             case 9:     // CHANNEL: d
-                        aymidRestoreVoice(chip, voice, InitState::ALL);
+                        if (aymidState.isCtrlMode)
+                            aymidState.isCleanMode = !aymidState.isCleanMode;
+                        else {
+                            aymidRestoreVoice(chip, voice, InitState::ALL);
+                            aymidState.isCleanMode = false;
+                        }
                         break;
 
             case 12:    // CHANNEL: e

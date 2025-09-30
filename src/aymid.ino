@@ -195,7 +195,6 @@ void aymidInit(int chip) { // TODO
         aymidState.isChipSelectionMode = false;
     }
 
-    aymidState.isCleanMode = false;
     aymidState.isShiftMode = false;
     aymidState.isAltMode = false;
 
