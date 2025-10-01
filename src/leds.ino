@@ -33,7 +33,7 @@ void ledTickAymid()
 
                 maskB = B11111111; 
                 if (!aymidState.incomingInd)    maskB &= ~B00010000; // preset led
-                //if (aymidState.XXX)           maskB &= ~B00001000; // bank led
+                if (aymidState.isCtrlMode)      maskB &= ~B00001000; // bank led
                 maskC = B10000000;
 
                 PORTB = maskB;

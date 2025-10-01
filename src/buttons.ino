@@ -142,12 +142,8 @@ void buttPressedAymid(int pin, int state)
             case 5:     // ROW 2: LFO/ARP
             case 10:    // ROW 3: NOISE
             case 7:     // ROW 4: ENV
-            case 4:     // ROW 5: SEQ
 
                         selectRow = index+1;
-
-                        // seq button - ctrl
-                        if (pin == 4) aymidState.isCtrlMode = true;
 
                         if (aymidState.isShiftMode || pressedRow == selectRow) {
                             switch (selectRow) {
@@ -159,6 +155,11 @@ void buttPressedAymid(int pin, int state)
                         }
                         break;
 
+            case 4:     // ROW 5: SEQ
+                        aymidState.isCtrlMode = true;
+                        break;
+
+
             //
             // MATRIX COLS
             //
@@ -167,7 +168,7 @@ void buttPressedAymid(int pin, int state)
             case 2:     // CHANNEL: b
             case 6:     // CHANNEL: c
 
-                        if (pressedRow == 5) aymidToggleVoice(chip, index, aymidState.isCtrlMode);
+                        if (aymidState.isCtrlMode) aymidToggleVoice(chip, index, true);
                         else {
                             switch (pressedRow) {
                                 case 1: aymidOverrideVoice(chip, index, aymidState.overrideTone, aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF);  break;
@@ -191,7 +192,6 @@ void buttPressedAymid(int pin, int state)
                         break;
 
             case 3:     // CHANNEL: f
-                        //selectRow = pressedRow < 4 ? pressedRow + 1 : 1;
                         aymidState.isShiftMode = true;
                         break;
         }
