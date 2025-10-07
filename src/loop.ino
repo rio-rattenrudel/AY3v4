@@ -58,6 +58,7 @@ void tickStateMachine()
 
                 if (aymidState.enabled) {
                     aymidState.enabled = false;
+                    pressedRow = 0;
 
                     // reload preset
                     mode = 1;

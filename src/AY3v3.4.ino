@@ -3,7 +3,7 @@
 #include <assert.h>
 
 /***********************************
-    -= AY3 version 4 (4.071) =-
+    -= AY3 version 4 (0.80) =-
       ~-~-= phoenix =-~-~-
 
         + synth engine overhaul
@@ -115,7 +115,7 @@ byte envPeriodType;                 // located at 3805
 
 // general
 byte writeConfig        = 0;
-int8_t selectedChip     = 0;        // -1 both, 0 chip1, 1 chip2
+int8_t selectedChip     = -1;       // -1 both, 0 chip1, 1 chip2
 int8_t lastSingleChip   = 0;
 byte seqSetup           = 1;
 byte mode               = 1;
@@ -164,7 +164,7 @@ byte buttLast[20]       = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 byte selectRow          = 0;
 byte pressedRow         = 0;
 byte pressedCol         = 9;
-byte voiceMode          = VOICE_ENABLE;
+byte voiceMode          = 0;
 bool seqPressed;
 bool encPressed;
 bool voicePressed;

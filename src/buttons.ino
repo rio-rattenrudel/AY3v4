@@ -401,18 +401,19 @@ void buttPressed(int pin, int state)
                             // no sequence
                             if (seqSetup == 1) {
 
+                                // select chip 1
+                                if (selectedChip == -1) {
+                                    selectedChip = 0;
+                                    pressedCol = 1;
+
                                 // select chip 2
-                                if (selectedChip == 0) {
+                                } else if (selectedChip == 0) {
                                     selectedChip = 1;
                                     pressedCol = 4;
 
-                                // select both chips
-                                } else if (selectedChip == 1) {
-                                    selectedChip = -1;
-
-                                // release (select chip 1)
+                                // release (select both chips)
                                 } else {
-                                    selectedChip = 0;
+                                    selectedChip = -1;
                                     pressedRow = 0;
                                     pressedCol = 0;
                                     ledNumber = oldNumber;
@@ -429,8 +430,8 @@ void buttPressed(int pin, int state)
                             if (seqSetup == 1) {
 
                                 // select chip 1
-                                selectedChip = 0;
-                                pressedCol = 1;
+                                selectedChip = -1;
+                                pressedCol = 0;
                             }
                         }
 
@@ -503,7 +504,7 @@ void buttPressed(int pin, int state)
         if (selectedChip > -1) lastSingleChip = selectedChip;
 
         // reset "voice mode: E"    
-        if (pressedRow != 1) voiceMode = VOICE_ENABLE;
+        if (pressedRow != 1) voiceMode = 0;
 
         // show led states, (inclusive "voice mode: E")
         if (pressedRow != 1 || (pressedRow == 1 && voiceMode == VOICE_ENABLE))

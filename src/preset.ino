@@ -60,7 +60,7 @@ byte readey()
 void load()
 {
     // reset chip selection
-    selectedChip = 0;
+    selectedChip = -1;
 
     memPointer = (preset * 60) + ((bank * 60) * 8);
 

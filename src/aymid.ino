@@ -1237,9 +1237,8 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
                 aymidState.enabled = true;
                 initializeAY3s();
                 aymidRestore(-1); // TODO
-                pressedRow = 1;
             }
-
+            pressedRow = 1;
             break;
 
         case 0x4d:
