@@ -177,6 +177,8 @@ void buttPressedAymid(int pin, int state)
                                 case 3: aymidOverrideVoice(chip, index, aymidState.overrideNoise,aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF);  break;
                                 case 4: aymidOverrideVoice(chip, index, aymidState.overrideEnv,  aymidState.isAltMode ? TGL_AY3FILE_ON : TGL_AY3FILE_OFF);  break;
                             }
+
+                            if (pressedRow == 1) aymidFindInitToneOverrideOn(chip);
                         }
                         break;
 
@@ -187,6 +189,7 @@ void buttPressedAymid(int pin, int state)
                             // special case: envshape
                             if (aymidState.isCleanMode)
                                 updateLastAY3Values(chip, 0, InitState::ENVTYPE);
+                            else aymidOverrideEnvType(-1, 0, false);
 
                         } else {
                             aymidRestoreVoice(chip, voice, InitState::ALL);

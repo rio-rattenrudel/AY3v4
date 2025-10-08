@@ -88,6 +88,7 @@ struct aymidState_t {
     int adjustFine[AY3CHIPS][AY3VOICES];
 
     int adjustOctaveEnv[AY3CHIPS];
+    int adjustOctaveEnvAlt[AY3CHIPS];
     int adjustFineEnv[AY3CHIPS];
     byte adjustNoisePeriod[AY3CHIPS];
 
@@ -99,6 +100,8 @@ struct aymidState_t {
     bool isShiftMode;
     bool isAltMode;
     bool isCtrlMode;
+
+    byte copyVoice;
 
     bool isChipSelectionMode; // unused
 
@@ -181,6 +184,7 @@ void aymidInit(int chip) { // TODO
         aymidState.overrideEnvType[chip] = 0;
 
         aymidState.adjustOctaveEnv[chip] = 0;
+        aymidState.adjustOctaveEnvAlt[chip] = 0;
         aymidState.adjustFineEnv[chip] = POT_VALUE_TO_AYMID_FINETUNE_ENV(POT_NOON);
 
         aymidState.adjustNoisePeriod[chip] = NOISE_AY3FILE;
@@ -196,6 +200,8 @@ void aymidInit(int chip) { // TODO
 
     aymidState.isShiftMode = false;
     aymidState.isAltMode = false;
+
+    aymidState.copyVoice = 0;
 
     aymidState.incomingInd = false;
     aymidState.preparedEnvType = 0;
@@ -416,6 +422,26 @@ void aymidOverrideVoice(int chip, byte voice, OverrideState buttonState[][AY3VOI
             buttonState[chip][voice] = OverrideState::AY3FILE;
         else buttonState[chip][voice] = state;
     }
+}
+
+void aymidFindInitToneOverrideOn(int chip) {
+
+    // chip 1 validation
+    byte selected = (chip > -1 && chip < AY3CHIPS) ? chip : 0;
+
+    // search first voice with override state ON
+    byte overcc = 0;
+    byte cvoice = 0;
+    for (byte i = 0; i < AY3VOICES; i++) {
+        if (aymidState.overrideTone[selected][i] == OverrideState::ON) {
+            overcc++;
+            if (overcc == 1)
+                cvoice = i+1;
+        }
+    }
+
+    // store first found or reset
+    if (overcc < 2) aymidState.copyVoice = cvoice;
 }
 
 /*
@@ -756,6 +782,7 @@ void aymidOverrideEnvType(int chip, int8_t dir, bool prepare) {
  * Send direct EnvType
  */
 void sendImmediateEnvType(int chip) {
+    if (aymidState.isCleanMode) return;
 
     if (aymidState.preparedEnvType) {
         aymidState.overrideEnvType[0] = aymidState.preparedEnvType;
@@ -836,9 +863,57 @@ void aymidUpdateVolume(int chip, int voice) {
 void aymidUpdateEnvelopePitch(bool pitchUpdateEnvelope, byte maskBytes[], byte dataBytes[], byte chip) {
     if (pitchUpdateEnvelope) {
 
+        long pitch  = 0;
+        bool found  = false;
+
+        // use alternate tuning?
+        if (!aymidState.isCleanMode) {
+
+            for (byte i = 0; i < AY3VOICES; i++) {
+
+                // found voice with override state ON
+                if (aymidState.overrideEnv[chip][i] == OverrideState::ON) {
+
+                    // is envelope not activated?
+                    if (!(aymidState.lastAY3values[AY3_AMPA+i] & 0x10)) {
+
+                        // validate tone of same voice
+                        byte toneHI = aymidState.lastAY3values[AY3_TONEA_PITCH_HI + 2 * i];
+                        byte toneLO = aymidState.lastAY3values[AY3_TONEA_PITCH_LO + 2 * i];
+                        byte toneEn = !(aymidState.lastAY3values[AY3_MIXER] & B00000001 << i);
+
+                        // found tone of same voice enabled
+                        if (toneEn && (toneHI || toneLO)) {
+                            pitch = (toneHI << 8) + toneLO;
+                        
+                        } else {
+
+                            // search next tone pitches (last resets)
+                            for (byte v = i < AY3VOICES-1 ? i : 0; v < AY3VOICES; v++) {
+                                toneHI = aymidState.lastAY3values[AY3_TONEA_PITCH_HI + 2 * v];
+                                toneLO = aymidState.lastAY3values[AY3_TONEA_PITCH_LO + 2 * v];
+                                toneEn = !(aymidState.lastAY3values[AY3_MIXER] & B00000001 << v);
+
+                                // found tone of next voice enabled
+                                if (toneEn && (toneHI || toneLO)) {
+                                    pitch = (toneHI << 8) + toneLO;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (pitch) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
         // Current original pitch
-        long pitch = (  aymidState.lastAY3values[AY3_ENVELOPE_HI] << 8) +
-                        aymidState.lastAY3values[AY3_ENVELOPE_LO];
+        if (!pitch) pitch = (   aymidState.lastAY3values[AY3_ENVELOPE_HI] << 8) +
+                                aymidState.lastAY3values[AY3_ENVELOPE_LO];
 
         // calculate finetune
         if (!aymidState.isCleanMode) 
@@ -847,9 +922,11 @@ void aymidUpdateEnvelopePitch(bool pitchUpdateEnvelope, byte maskBytes[], byte d
         // Change octave if not a pure noise playing
         if (!aymidState.isCleanMode) {
 
-            // Calculate octave switch (-2, -1, 0, +1, +2)
-            if      (aymidState.adjustOctaveEnv[chip] > 0)  pitch <<=   aymidState.adjustOctaveEnv[chip];
-            else if (aymidState.adjustOctaveEnv[chip] < 0)  pitch >>= (-aymidState.adjustOctaveEnv[chip]);
+            // Calculate octave switch (-2, -1, 0, +1, +2) (found alternative? use alternate value)
+            byte adjustOctaveEnv = found ? aymidState.adjustOctaveEnvAlt[chip] : aymidState.adjustOctaveEnv[chip];
+
+            if      (adjustOctaveEnv > 0)  pitch <<=   adjustOctaveEnv;
+            else if (adjustOctaveEnv < 0)  pitch >>= (-adjustOctaveEnv);
         }
 
         // Scale down to even octave if pitch is higher than possible
@@ -868,9 +945,55 @@ void aymidUpdatePitch(bool pitchUpdate[], byte maskBytes[], byte dataBytes[], by
     for (byte i = 0; i < AY3VOICES; i++) {
         if (pitchUpdate[i]) {
 
+            long pitch  = 0;
+
+            // use alternate tuning?
+            if (!aymidState.isCleanMode) {
+
+                // found voice with override state ON
+                if (aymidState.overrideTone[chip][i] == OverrideState::ON) {
+
+                    // which voice was selected first?
+                    if (!aymidState.copyVoice || (aymidState.copyVoice == i+1)) {
+
+                        // search all override ON tones (linked)
+                        for (byte v = 0; v < AY3VOICES; v++) {
+
+                            // ignore identical voice
+                            if (v == i) continue;
+
+                            // found voice with override state ON
+                            if (aymidState.overrideTone[chip][v] == OverrideState::ON) {
+
+                                byte toneHI = aymidState.lastAY3values[AY3_TONEA_PITCH_HI + 2 * i];
+                                byte toneLO = aymidState.lastAY3values[AY3_TONEA_PITCH_LO + 2 * i];
+
+                                // duplicate current pitch to target
+                                if (toneHI || toneLO) {
+                                    dataBytes[AY3_TONEA_PITCH_LO + 2 * v] = toneLO;
+                                    dataBytes[AY3_TONEA_PITCH_HI + 2 * v] = toneHI;
+
+                                    // copy current enable state to target
+                                    if ((aymidState.lastAY3values[AY3_MIXER] & B00000001 << i))
+                                        dataBytes[AY3_MIXER] &= ~(B00000001 << v);  // enable
+                                    else dataBytes[AY3_MIXER] |=  B00000001 << v;   // disable
+
+                                    // set mask for target
+                                    switch (v) {
+                                        case 0: maskBytes[0] |= 0x03; break;
+                                        case 1: maskBytes[0] |= 0x0c; break;
+                                        case 2: maskBytes[0] |= 0x30; break;
+                                    }               
+                                }    
+                            }
+                        }
+                    }
+                }
+            }
+
             // Current original pitch
-            long pitch = (  aymidState.lastAY3values[AY3_TONEA_PITCH_HI + 2 * i] << 8) +
-                            aymidState.lastAY3values[AY3_TONEA_PITCH_LO + 2 * i];
+            if (!pitch) pitch = (   aymidState.lastAY3values[AY3_TONEA_PITCH_HI + 2 * i] << 8) +
+                                    aymidState.lastAY3values[AY3_TONEA_PITCH_LO + 2 * i];
 
             // calculate finetune
             if (!aymidState.isCleanMode) 
@@ -926,7 +1049,8 @@ bool runMixer(byte chip, byte voice, byte* data) {
 
             // Voice
             if (aymidState.overrideTone[chip][voice] == OverrideState::ON) {
-                *data &= ~( B00000001 << voice);
+                // ignored, this is used for "voice linker" in pitch routine
+                //*data &= ~( B00000001 << voice);
             } else if (aymidState.overrideTone[chip][voice] == OverrideState::OFF) {
                 *data |=    B00000001 << voice;
             }
@@ -1245,7 +1369,6 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
             // Stop playback
             aymidState.incomingInd = true; // OFF
             aymidResetAY3Chip(-1);
-            pressedRow = 0;
             break;
 
         case 0x4f:

@@ -60,14 +60,39 @@ void ledTickAymid()
                         else                    maskC = line | B00100000;
                     } else                      maskC = line;
 
-                    if (aymidState.isCleanMode && i < 5) {
 
-                        // runs down the line (stellar trail)
-                        if (i > runnerln - 1 && i < runnerln + 1) {
+                    if (i < 5) {
 
-                            // incoming indicator 
-                            if (aymidState.incomingInd) maskC &= ~B00001000;
-                            else                        maskC |=  B00001000;
+                        if (aymidState.isCleanMode) {
+
+                            // runs down the line (stellar trail)
+                            if (i > runnerln - 1 && i < runnerln + 1) {
+
+                                // incoming indicator 
+                                if (aymidState.incomingInd) maskC &= ~B00001000;    // off
+                                else                        maskC |=  B00001000;    // on
+                            }
+
+                        } else {
+
+                            // voice line
+                            if (i == 1) {
+
+                                byte overcc = 0;
+                                for (byte voice = 0; voice < AY3VOICES; voice++) {
+
+                                    // found any voice with override state ON (flash alt); checked on chip 1
+                                    if (aymidState.overrideTone[0][voice] == OverrideState::ON) {
+                                        overcc++;
+
+                                        // indicate override ON
+                                        if (aymidState.incomingInd) {
+                                            if (add2)       maskC &= ~B00010000;    // select
+                                            if (overcc > 1) maskC &= ~B00100000;    // linked
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 

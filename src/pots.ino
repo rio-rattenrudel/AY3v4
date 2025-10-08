@@ -42,8 +42,20 @@ void potTickAymid()
                         if (!aymidState.isCtrlMode) {
                             int8_t octave = getOctave(analogTemp);
 
-                            for (byte chip = 0; chip < AY3CHIPS; chip++)
-                                aymidState.adjustOctaveEnv[chip] = octave;
+                            for (byte chip = 0; chip < AY3CHIPS; chip++) {
+
+                                bool found = false; // some env on?
+                                for (byte i = 0; i < AY3VOICES; i++) {
+                                    if (aymidState.overrideEnv[chip][i] == OverrideState::ON) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+
+                                // store alternate octave?
+                                if (found)  aymidState.adjustOctaveEnvAlt[chip] = octave;
+                                else        aymidState.adjustOctaveEnv[chip]    = octave;
+                            }
                         }
 
                         potLast[pot] = analogTemp;

@@ -3,7 +3,7 @@
 #include <assert.h>
 
 /***********************************
-    -= AY3 version 4 (0.80) =-
+    -= AY3 version 4 (0.85) =-
       ~-~-= phoenix =-~-~-
 
         + synth engine overhaul
