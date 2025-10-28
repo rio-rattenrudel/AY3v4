@@ -1,6 +1,7 @@
 #include <MIDI.h>
 #include <EEPROM.h>
 #include <assert.h>
+#include "mva.h"
 
 /***********************************
     -= AY3 version 4 (4.00) =-
@@ -87,6 +88,9 @@ enum class PitchType { TONE, NOISE, ENVELOPE };
 #define TGL_AY3FILE_ON  2
 #define RST_AY3FILE     3
 
+#define NONE            0
+#define EDIT            1
+
 
 // debug
 #define TONETEST        0           // DEBUGGING BY TEST TONE (0, 1, 2)
@@ -117,7 +121,7 @@ byte envPeriodType;                 // located at 3805
 byte writeConfig        = 0;
 int8_t selectedChip     = -1;       // -1 both, 0 chip1, 1 chip2
 int8_t lastSingleChip   = 0;
-byte seqSetup           = 1;
+byte seqSetup           = NONE;
 byte mode               = 1;
 byte loadRequest        = true;
 
@@ -191,6 +195,7 @@ int destiPitch[7];
 int pitchLast[7];
 int pitch[7]            = { 0, 0, 0, 0, 0, 0, 0 };
 int bend[7];
+mva_t mva;                                          // voice allocator by antto :)
 byte held[7]            = { 0, 0, 0, 0, 0, 0, 0 };  // MASTER, 1, 2, 3, 4, 5, 6
 byte arpStep[7]         = { 1, 1, 1, 1, 1, 1, 1 };  // MASTER, 1, 2, 3, 4, 5, 6
 byte arpOct[7]          = { 0, 0, 0, 0, 0, 0, 0 };  // MASTER, 1, 2, 3, 4, 5, 6
@@ -224,7 +229,6 @@ byte presetTune[7];
 
 // sequencer
 byte seq                = 0;
-byte key                = 0;
 byte seqStep            = 0;
 int8_t selectedStep     = 0;
 bool seqNoise[16];
@@ -234,9 +238,7 @@ byte seqNoise2;
 byte seqVoice1;
 byte seqVoice2;
 byte seqSpeed;
-byte seqNote[]          = { 0, 4, 7, 4, 0, 4, 7, 4, 0, 4, 7, 4, 0, 4, 7, 4, 
-                            0, 4, 7, 4, 0, 4, 7, 4, 0, 4, 7, 4, 0, 4, 7, 4, 
-                            0, 7, 8, 3, 1, 6, 2, 4, 6, 7, 4, 2, 6, 7, 0 };
+byte seqNote[16];
 
 // envelope speed lookup table - frequencies related to midi notes (16 bit)
 // it is only used by the CLOCK_LOW type to approximate the old firmware (3.4)
@@ -378,7 +380,7 @@ void setup()
     if (!digitalRead(5)) // boot +seq btn
     {
         writeConfig = CFG_MIDICHANNEL;
-        seqSetup = 0;
+        seqSetup = EDIT;
         selectedStep = masterChannel - 1;
     }
 
@@ -386,7 +388,7 @@ void setup()
     if (!digitalRead(6)) // boot +arp btn
     {
         writeConfig = CFG_CLOCKTYPE;
-        seqSetup = 0;
+        seqSetup = EDIT;
         selectedStep = clockType;
     }
 
@@ -400,7 +402,7 @@ void setup()
     if (!digitalRead(5)) // boot +env btn
     {
         writeConfig = CFG_ENVPDTYPE;
-        seqSetup = 0;
+        seqSetup = EDIT;
         selectedStep = envPeriodType;
     }
 
@@ -408,7 +410,7 @@ void setup()
     if (!digitalRead(6)) // boot +voice btn
     {
         writeConfig = CFG_REVISION;
-        seqSetup = 0;
+        seqSetup = EDIT;
         selectedStep = boardRevision;
     }
 

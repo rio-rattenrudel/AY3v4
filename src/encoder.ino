@@ -43,7 +43,7 @@ void encoderMoved(int8_t dir)
     // AYMID routine
     if (aymidState.enabled) return encoderMovedAymid(dir);
 
-    if (seqSetup == 0) {
+    if (seqSetup == EDIT) {
 
         // set step
         selectedStep += dir;
@@ -59,7 +59,10 @@ void encoderMoved(int8_t dir)
         else if (selectedStep < 0)      selectedStep = 0;
 
         // step position
-        if (!writeConfig) ledNumber = (selectedStep % 8) + 1;
+        if (!writeConfig) {
+            ledNumber = (selectedStep % 8) + 1;
+            return;
+        }
 
         // reset counter
         displaycc = 0;
@@ -263,9 +266,14 @@ void encoderMoved(int8_t dir)
                 if (currentTune < 76)    currentTune = 76;
 
                 // visuals <--- negative [page 4] | [page 5] positive --->
-                if      (currentTune > 100) showMatrixedNumber(191-currentTune); // page 5 (+reverse)!
-                else if (currentTune < 100) showMatrixedNumber(190-currentTune); // page 4 (-reverse)!
-                else                        displaycc = MAX_LEDPICCOUNT; // reset
+                if      (currentTune > 100) showMatrixedNumber(191-currentTune);    // page 5 (+reverse)!
+                else if (currentTune < 100) showMatrixedNumber(190-currentTune);    // page 4 (-reverse)!
+                else {
+
+                    // zero at page 0
+                    showMatrixedNumber(0);                  
+                    ledNumber = 0;
+                }
 
                 presetTune[pressedCol] = currentTune;
 

@@ -55,7 +55,7 @@ void handleProgramChange(int channel, int number1, int number2)
 
             // explicite load in none-default state
             // otherwise it's already handled by encoderMoved
-            if (pressedRow || seqSetup) loadRequest = true;
+            if (pressedRow || seqSetup == NONE) loadRequest = true;
         }
     }
 }
@@ -237,8 +237,27 @@ void receivedNote(byte channel, byte note, byte vel)
 {
     note++;
 
-    if (channel == masterChannel && seqSetup == 0)
-        seqNote[selectedStep] = note; // in setup mode, do the note thing
+    // in setup mode, do the note thing
+    if (channel == masterChannel && seqSetup == EDIT) {
+
+        // keep note
+        seqNote[selectedStep] = note;
+
+        // enable first voice of every chip
+        AY3( 7, B11111110);
+        AY32(7, B11111110);
+
+        // set base note by on/off event
+        base[1] = vel ? note : 0;
+        base[4] = vel ? note : 0;
+
+        // update pitch
+        assignChannelPitch(1);
+        assignChannelPitch(4);
+
+        // exit
+        return;
+    }
 
     if ((masterChannel == 1 && channel == 1) ||
         (masterChannel != 1 && channel == masterChannel)) {
@@ -290,11 +309,31 @@ void receivedNote(byte channel, byte note, byte vel)
 
                 isort(noteMem[MASTER], held[MASTER] + 1);
 
-                // update mixer
-                processMixer(false);
+                // voice allocator (release note)
+                if (mva.n) {
+                    uint8_t tmp = mva.buf[0];
+                    mvaNoteOff(&mva, note);
+                    if (mva.n) {
+                        if (mva.buf[0] != tmp) {
+
+                            // set base note by voice allocator
+                            base[1] = base[2] = base[3] = base[4] = base[5] = base[6] = mva.buf[0];
+                            handleBend(1, bender);
+
+                            // retrigger mixer and restart sequencer
+                            // to trigger last played key
+                            retriggerMixerAndSteps();
+                        }
+                    }
+                }
+
 
                 if (held[MASTER] == 0) {
 
+                    // update mixer
+                    processMixer(false);
+
+                    // reset base notes
                     base[1] = base[2] = base[3] = base[4] = base[5] = base[6] = 0;
 
                     stopEnvSpeed();
@@ -310,7 +349,8 @@ void receivedNote(byte channel, byte note, byte vel)
             // play
             } else {
 
-                key = note;
+                // voice allocator (add note)
+                mvaNoteOn(&mva, note);
 
                 held[MASTER]++;
                 triggerEnv();
@@ -323,13 +363,15 @@ void receivedNote(byte channel, byte note, byte vel)
                 noteMem[MASTER][held[MASTER] - 1] = note;
                 isort(noteMem[MASTER], held[MASTER]);
 
-                // retrigger mixer and restart sequencer
-                retriggerMixerAndSteps();
-
-                base[1] = base[2] = base[3] = base[4] = base[5] = base[6] = note;
+                // set base note by voice allocator
+                base[1] = base[2] = base[3] = base[4] = base[5] = base[6] = mva.buf[0];
                 handleBend(1, bender);
 
                 if (held[MASTER] == 1) {
+
+                    // retrigger mixer and restart sequencer
+                    retriggerMixerAndSteps();
+
                     preparePitches();
 
                     // update pitch channel 1..6 (a, b, c, d, e, f)
@@ -338,7 +380,8 @@ void receivedNote(byte channel, byte note, byte vel)
 
                     // exceed arp counter (reset)
                     arpcc = 0x0400;
-                }
+
+                } else retriggerMixerAndSteps();
             }
         }
     }

@@ -83,6 +83,9 @@ void processMixerAndSteps()
     // reset count
     seqcc = 0;
 
+    // assign note
+    seq = seqNote[seqStep];
+
     // mixer
     processMixer(true);
 
@@ -93,15 +96,12 @@ void processMixerAndSteps()
         else                ledNumber = seqStep - 7;
     }
 
-    // loop
+    // next
     seqStep++;
     if (seqStep > 15) seqStep = 0;
-
-    // assign note
-    seq = seqNote[seqStep];
 }
 
 void processMixer(bool updateStep)
 {
-    if (seqSetup == 1 && displaycc >= 3000) setMixer(updateStep);
+    if (seqSetup == NONE && displaycc >= 3000) setMixer(updateStep);
 }

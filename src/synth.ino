@@ -214,9 +214,13 @@ void preparePitches()
     // update pitch channel 1..6 (a, b, c, d, e, f)
     for (byte channel = 1; channel < 7; channel++) {
 
-        // sequencer offset
-        if (bitRead(ledMatrix[5], channel-1) && held[MASTER] > 0)
-            base[channel] = seq + (key - 60);
+        // sequencer offset (set base note by voice allocator)
+        if (bitRead(ledMatrix[5], channel-1) && held[MASTER] > 0) {
+            int note = seq + mva.buf[0] - 61;
+            if (note < 0) note = 0;
+
+            base[channel] = note;
+        }
 
         if (base[channel] != 0) {
 

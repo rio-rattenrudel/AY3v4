@@ -253,18 +253,32 @@ void buttPressed(int pin, int state)
     // pressed
     if (state == 0) {
 
+        // ignore buttons in config mode
+        if (writeConfig) {
+             encoderMoved(0);
+             return;
+         }
+
         // restore current matrix values
         if (displaycc < 20000) restoreMatrix();
 
         // general handling
         if ((pressedRow == 1 && pin == 8 && voiceMode == VOICE_TUNING) ||  // [E V T release]
-            (pressedRow == 2 && pin == 5) ||
-            (pressedRow == 5 && pin == 4)) {
+            (pressedRow == 2 && pin == 5)) {
 
             pressedRow = 0;
             ledNumber = oldNumber;
             return;
         }
+
+        // edit sequence mode? ignore input for row 6
+        if (seqSetup == EDIT && pressedRow == 6 && (
+                pin == 11   || 
+                pin == 2    || 
+                pin == 6    || 
+                pin == 9    || 
+                pin == 12   || 
+                pin == 3)) return; 
 
         switch (pin) {
 
@@ -276,7 +290,7 @@ void buttPressed(int pin, int state)
                         if (pressedRow == 3 || (pressedRow == 4 && envPeriodType == 0)) {
 
                             // no sequence?
-                            if (seqSetup == 1) {
+                            if (seqSetup == NONE) {
 
                                 // update state
                                 encoderMoved(0);
@@ -345,7 +359,7 @@ void buttPressed(int pin, int state)
                         voicePressed = true;
 
                         // sequence?
-                        if (seqSetup == 0) seqVoice[selectedStep] = !seqVoice[selectedStep];
+                        if (seqSetup == EDIT) seqVoice[selectedStep] = !seqVoice[selectedStep];
                         else {
 
                             // update state
@@ -388,7 +402,7 @@ void buttPressed(int pin, int state)
             case 5:     // ROW 2: LFO/ARP
 
                         // no sequence? -> lfo pitch
-                        if (seqSetup == 1) {
+                        if (seqSetup == NONE) {
                             pressedRow = 2;
                             encoderMoved(0);
                         }
@@ -402,7 +416,7 @@ void buttPressed(int pin, int state)
                             (pressedRow == 4 && pin == 7)) {
 
                             // no sequence
-                            if (seqSetup == 1) {
+                            if (seqSetup == NONE) {
 
                                 // select chip 1
                                 if (selectedChip == -1) {
@@ -430,7 +444,7 @@ void buttPressed(int pin, int state)
                         } else {
 
                             // no sequence
-                            if (seqSetup == 1) {
+                            if (seqSetup == NONE) {
 
                                 // select chip 1
                                 selectedChip = -1;
@@ -443,14 +457,15 @@ void buttPressed(int pin, int state)
                             pressedRow = 3;
 
                             // sequence?
-                            if (seqSetup == 0)  seqNoise[selectedStep] = !seqNoise[selectedStep];
-                            else                encoderMoved(0);
+                            if (seqSetup == EDIT)
+                                seqNoise[selectedStep] = !seqNoise[selectedStep];
+                            else encoderMoved(0);
 
                         // ENVELOPE
                         } else {
 
                             // no sequence? -> env
-                            if (seqSetup == 1) {
+                            if (seqSetup == NONE) {
                                 pressedRow = 4;
                                 encoderMoved(0);
                             }
@@ -458,12 +473,21 @@ void buttPressed(int pin, int state)
                         break;
 
             case 4:     // ROW 5: SEQ
-                        pressedRow = 5;
 
-                        seqPressed = 1;
-                        countDown = 20;
+                        // initiate entering seq mode
+                        if (seqSetup == NONE) {
+                            seqPressed = true;
+                            countDown = 3;
+                        }
 
-                        copyDisplay();
+                        if (pressedRow == 5 || seqSetup == EDIT) {
+
+                            // exit mode
+                            pressedRow = 0;
+                            seqSetup = NONE;
+
+                        } else pressedRow = 5;
+
                         encoderMoved(0);
                         break;
 
@@ -553,7 +577,6 @@ void buttPressed(int pin, int state)
             //
 
             case 4:     seqPressed = false;
-                        ledNumber = oldNumber;
                         break;
 
             //

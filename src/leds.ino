@@ -143,6 +143,10 @@ void doLedMatrix()
     // AYMID routine
     if (aymidState.enabled) return ledTickAymid();
 
+
+    // detect sequencer edit mode
+    bool seqmode = seqSetup == EDIT && !writeConfig;
+
     // 1 = 1,6
     // 2 = 2,6
     // 3 = 3,6
@@ -169,12 +173,16 @@ void doLedMatrix()
                 if (ledNumber == 6) { maskB = B11111110; maskC = B10000000; }
                 if (ledNumber == 8) { maskB = B11111011; maskC = B10000000; }
 
+                // flash selected
+                if (seqmode && !flippedN) maskB = B11111111;
+
                 PORTB = maskB;
                 PORTC = maskC;
                 miniDelay();
 
-                if      (mode == 1) { maskB = B11101111; maskC = B10000000; }
-                else if (mode == 2) { maskB = B11110111; maskC = B10000000; }
+                maskC = B10000000;
+                if (seqmode)    maskB = selectedStep < 8    ? B11101111 : B11110111;
+                else            maskB = mode == 1           ? B11101111 : B11110111;
 
                 PORTB = maskB;
                 PORTC = maskC;
@@ -184,7 +192,6 @@ void doLedMatrix()
 
         case 1: // LEDMATRIX
 
-
                 //
                 // LFO / ARP
                 //
@@ -193,6 +200,9 @@ void doLedMatrix()
                     if (ledMatrix[2] != 0)  maskC = 0;
                     else                    maskC = B00111111;
                 } else                      maskC = ledMatrix[2];
+
+
+                if (seqmode) maskC = 0;
 
                 if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[2];
 
@@ -229,7 +239,8 @@ void doLedMatrix()
                     } else                  maskC =  B00111111; // none --> set all
                 }
 
-                if (seqSetup == 0 && !writeConfig && displaycc >= MAX_LEDPICCOUNT) {
+
+                if (seqmode) {
                     if (seqVoice[selectedStep] == 1)    maskC = B00111111;
                     else                                maskC = 0;
                 }
@@ -287,10 +298,10 @@ void doLedMatrix()
                         }
                     }
 
-                    // noise seq assignment
-                    if (i == 3 && seqSetup == 0 && !writeConfig && displaycc >= MAX_LEDPICCOUNT) {
-                        if (seqNoise[selectedStep] == 1)    maskC = B00111111;
-                        else                                maskC = 0;
+
+                    if (seqmode) {
+                        if (i == 3 && seqNoise[selectedStep] == 1)  maskC = B00111111;
+                        else                                        maskC = 0;
                     }
 
                     if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[i];
@@ -309,6 +320,9 @@ void doLedMatrix()
                     if (ledMatrix[5] != 0)  maskC = 0;
                     else                    maskC = B00111111;
                 } else                      maskC = ledMatrix[5];
+
+                // SEQ EDIT
+                if (seqSetup == EDIT) maskC = 0;
 
                 if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[5];
 

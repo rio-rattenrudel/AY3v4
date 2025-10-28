@@ -7,7 +7,7 @@ void doSequencer()
     if (!clockSynced) {
 
         // count
-        if (seqSetup == 1) seqcc++;
+        if (seqSetup == NONE) seqcc++;
 
         // process
         if (seqcc > seqSpeed) processMixerAndSteps();
@@ -17,7 +17,7 @@ void doSequencer()
 void doSequencerClock()
 {
     // count
-    if (seqSetup == 1) seqcc++;
+    if (seqSetup == NONE) seqcc++;
 
     // process
     if (seqcc >= clockSpeeds[seqSpeed ? seqSpeed-1 : 0]) processMixerAndSteps();

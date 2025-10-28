@@ -90,7 +90,7 @@ void tickStateMachine()
 
 
     // pressed seq - sequencer setup mode
-    if (seqPressed == 1) {
+    if (seqPressed) {
         seqsetupcc++;
 
         if (seqsetupcc > 2000) {
@@ -99,10 +99,12 @@ void tickStateMachine()
             ledNumber = countDown;
 
             if (!countDown) {
+                seqPressed = false;
+
                 seqSetup = !seqSetup;
 
                 // silence voices, entering setup
-                if (seqSetup == 0) {
+                if (seqSetup == EDIT) {
                     base[1] = base[2] = base[3] = base[4] = base[5] = base[6] = 0;
 
                     bitWrite(data7A, 0, 1);
@@ -112,10 +114,19 @@ void tickStateMachine()
                     bitWrite(data7B, 1, 1);
                     bitWrite(data7B, 2, 1);
 
+                    if (displaycc >= MAX_LEDPICCOUNT) copyDisplay();
+
+                    displaycc = 0;
+         
+                    ledMatrixPic[1] = B111111;
+                    ledMatrixPic[2] = B000011;
+                    ledMatrixPic[3] = B111111;
+                    ledMatrixPic[4] = B110000;
+                    ledMatrixPic[5] = B111111;
+
                     pressedRow = 0;
                 }
 
-                ledNumber = oldNumber;
                 encoderMoved(0);
             }
         }
