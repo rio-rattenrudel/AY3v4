@@ -27,6 +27,7 @@ enum class PitchType { TONE, NOISE, ENVELOPE };
 #define LEDSUPPRESSION  1           // ENABLE LED FLICKER SUPPRESSION
 #define ZXTUNING        1           // ADAPT NOTES/ENV VALUES AS FOR ATARI CLOCK
 #define CLOCK_LOW_EMU   1           // CLOCK LOW FREQ ADAPTION (500Hz), old firmware emulation
+#define PITCHADJUSTMENT 1           // PITCHES ARE CALCULATED 2 OCTAVES DOWN
 
 // timing (!don't touch!)
 #define COUNT_DELAY_ZX  2           // time-critical (sync: 0..4)           <<< initial offset <<< ?
@@ -309,8 +310,9 @@ void setup()
     envPeriodType       = EEPROM.read(3805);
 
     // validation
-    if (preset > 7) preset  = 0;
-    if (bank > 7)   bank    = 0;
+    if (preset > 7)         preset          = 0;
+    if (bank > 7)           bank            = 0;
+    if (envPeriodType > 1)  envPeriodType   = 0;
 
     if (!masterChannel || masterChannel > 16) masterChannel = 1;
 

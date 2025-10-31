@@ -164,6 +164,12 @@ int calculatePitch(byte channel, PitchType ptype)
     if (useEnvelope || useNoise)    temp = base[channel];
     else                            temp = base[channel] + (100 - tune[channel]) + offsetNote[channel];
 
+
+#if PITCHADJUSTMENT
+    // lower octaves (-2 oct)
+    temp -= 24;
+#endif
+
     // lower the noise (1 oct), 
     // substract current (max 31) noisefreq steps for each chip, and -3 halftones correction!
     if (useNoise) temp -= 12 + (channel < 4 ? noiseFreq[0] : noiseFreq[1]) -3;
@@ -172,8 +178,15 @@ int calculatePitch(byte channel, PitchType ptype)
     if (clockType != CLOCK_LOW) temp--; // -= HIGH CLOCK ADAPTIONS =-
                                         // -1, because it shifts down a halftone for ~2MHz vs 500Khz
 #if CLOCK_LOW_EMU
+
+#if PITCHADJUSTMENT
+    else temp -= useEnvelope ? 24 : 0;  // -= LOW CLOCK ADAPTIONS =-
+                                        // -24 corresponding      to version 3.4 (notes)
+#else
     else temp -= useEnvelope ? 48 : 24; // -= LOW CLOCK ADAPTIONS =-
                                         // -24 corresponding      to version 3.4 (notes)
+#endif
+
 #else                                   // -48 corresponding apx. to version 3.4 (env-notes)
     else temp += 24;                    // +24 LOW clock note adaptation (500Khz tuned to 2Mhz)
 #endif
