@@ -247,17 +247,46 @@ void doLedMatrix()
                         // selected voice
                         if (pressedCol && pressedCol < 7) {
 
-                            // slow 3x
-                            if (flippedS)   maskC =  B00000000; // clr all
+                            // slow 2x
+                            if (flippedS)       maskC = B00000000;              // clr all
 
-                            // normal 1x             B00XXXXXn clr voice n = 0, <<, cleanup (1: B00111110 ..)           
-                            else            maskC &= B00111111 & ~(1 << (pressedCol - 1));
+                            // normal 1x                          
+                            else {
+
+                                // special mode: VOLUME & TUNING
+                                if (voiceMode == VOICE_VOLUME || 
+                                    voiceMode == VOICE_TUNING) {
+
+                                    // special validation of enabled dots
+                                    if (~ledMatrix[1] & 1 << (pressedCol - 1))  // found outsider?
+                                                maskC = 1 << (pressedCol - 1);  // select outsider
+                                    else        maskC &= B00111111 & ~(1 << (pressedCol - 1));
+
+                                // clearing bit at pos:  B00XXXXXn n = 0, <<, cleanup (1: B00111110 ..) 
+                                } else          maskC &= B00111111 & ~(1 << (pressedCol - 1));
+                            }
 
                             // no selection
-                        } else              maskC =  B00000000; // clr all
+                        } else                  maskC = B00000000;              // clr all
 
-                        // none actives
-                    } else                  maskC =  B00111111; // none --> set all
+                    // none actives
+                    } else {
+
+                        // special mode: VOLUME & TUNING
+                        if (voiceMode == VOICE_VOLUME || 
+                            voiceMode == VOICE_TUNING) {
+
+                            if (pressedCol && pressedCol < 7) {
+
+                                // slow 2x
+                                if (flippedS)   maskC = 1 << (pressedCol - 1);  // select outsider
+
+                                // normal 1x
+                                else            maskC = B00111111;              // none --> set all
+                            }
+                        
+                        } else                  maskC = B00111111;              // none --> set all
+                    }
                 }
 
 
@@ -287,7 +316,7 @@ void doLedMatrix()
                         // 1st chip noise selection
                         if (selectedChip == 0 && pressedCol < 4) {
 
-                            // slow 3x
+                            // slow 2x
                             if (flippedS) {
                                 if (maskC)  maskC  = B00000000; // clr
                                 else        maskC |= B00000111; // set 1st bitblock
@@ -301,7 +330,7 @@ void doLedMatrix()
                         // 2nd chip noise selection
                         } else if (selectedChip == 1 && pressedCol > 3 && pressedCol < 7) {
 
-                            // slow 3x
+                            // slow 2x
                             if (flippedS) {
                                 if (maskC)  maskC  = B00000000; // clr
                                 else        maskC |= B00111000; // set 2nd bitblock
