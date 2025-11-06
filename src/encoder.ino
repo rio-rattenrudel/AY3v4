@@ -204,10 +204,10 @@ void encoderMoved(int8_t dir)
                         break;
         }
 
-        if      (writeConfig == CFG_MIDICHANNEL)    EEPROM.write(3802, selectedStep + 1);
-        else if (writeConfig == CFG_REVISION)       EEPROM.write(3803, selectedStep);
-        else if (writeConfig == CFG_CLOCKTYPE)      EEPROM.write(3804, selectedStep);
-        else if (writeConfig == CFG_ENVPDTYPE)      EEPROM.write(3805, selectedStep);
+        if      (writeConfig == CFG_MIDICHANNEL)    EEPROM.write(3843, selectedStep + 1);
+        else if (writeConfig == CFG_REVISION)       EEPROM.write(3844, selectedStep);
+        else if (writeConfig == CFG_CLOCKTYPE)      EEPROM.write(3845, selectedStep);
+        else if (writeConfig == CFG_ENVPDTYPE)      EEPROM.write(3846, selectedStep);
 
     } else {
 

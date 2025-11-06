@@ -114,12 +114,12 @@ void  (*updateAy32)();              // update function pointer (rev.)
 // EEPROM
 byte lastPreset         = 0;
 byte lastBank           = 0;
-byte preset             = 0;        // located at 3800
-byte bank               = 0;        // located at 3801
-byte masterChannel;                 // located at 3802
-byte boardRevision;                 // located at 3803
-byte clockType;                     // located at 3804
-byte envPeriodType;                 // located at 3805
+byte preset             = 0;        // located at 3841
+byte bank               = 0;        // located at 3842
+byte masterChannel;                 // located at 3843
+byte boardRevision;                 // located at 3844
+byte clockType;                     // located at 3845
+byte envPeriodType;                 // located at 3846
 
 // general
 byte writeConfig        = 0;

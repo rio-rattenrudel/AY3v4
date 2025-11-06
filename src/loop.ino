@@ -87,12 +87,12 @@ void tickStateMachine()
 
         if (lastPreset != preset) {
             lastPreset = preset;
-            EEPROM.write(3800, preset); 
+            EEPROM.write(3841, preset); 
         }
 
         if (lastBank != bank) {
             lastBank = bank;
-            EEPROM.write(3801, bank);
+            EEPROM.write(3842, bank);
         }
 
         oldNumber = ledNumber = (mode == 1) ? preset + 1 : bank + 1;
