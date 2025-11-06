@@ -280,7 +280,7 @@ void encoderMoved(int8_t dir)
 
                 presetTune[pressedCol] = currentTune;
 
-                if (!chord) tune[pressedCol] = currentTune;
+                tune[pressedCol] = currentTune;
             }
         }
 

@@ -267,8 +267,8 @@ void buttPressed(int pin, int state)
         // restore current matrix values
         if (displaycc < 20000) restoreMatrix(false);
 
-        // edit sequence mode? ignore input for row 6
-        if (seqSetup == EDIT && pressedRow == 6 && (
+        // edit sequence mode? ignore input for row 5
+        if (seqSetup == EDIT && pressedRow == 5 && (
                 pin == 11   || 
                 pin == 2    || 
                 pin == 6    || 
