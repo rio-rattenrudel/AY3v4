@@ -43,6 +43,9 @@ void encoderMoved(int8_t dir)
     // AYMID routine
     if (aymidState.enabled) return encoderMovedAymid(dir);
 
+    // blocked motion by button (save guard)
+    if (dir && encPressed) return;
+
     if (seqSetup == EDIT) {
 
         // set step
