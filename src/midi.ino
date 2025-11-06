@@ -2,6 +2,17 @@
 // https://fortyseveneffects.github.io/arduino_midi_library/a00033.html
 // https://github.com/FortySevenEffects/arduino_midi_library/wiki/Using-Callbacks
 
+#include "PedalHandler.h" // sustain pedal manager for multi-channel handling
+
+void receivedNote(byte channel, byte note, byte vel);
+
+static PedalHandler pedalHandler; // shared pedal state across callbacks
+
+static void releaseSustainedNote(byte channel, byte note)
+{
+    receivedNote(channel, note, 0); // reuse existing note-off path when pedal lifts
+}
+
 void readMidi()
 {
     while (MIDI.read()) {
@@ -62,17 +73,21 @@ void handleProgramChange(int channel, int number1, int number2)
 
 void handleControlChange(byte channel, byte number, byte value)
 {
+    pedalHandler.handleControlChange(channel, number, value, releaseSustainedNote); // manage CC64 sustain
+
     if (channel == masterChannel) receivedCC(number, value);
 }
 
 void handleNoteOn(byte channel, byte note, byte velocity)
 {
+    pedalHandler.handleNoteOn(channel, note, releaseSustainedNote); // clear pending offs if note retriggers
     receivedNote(channel, note, velocity ? 127 : 0);
 }
 
 void handleNoteOff(byte channel, byte note, byte velocity)
 {
-    receivedNote(channel, note, 0);
+    if (pedalHandler.handleNoteOff(channel, note)) // only pass through when pedal allows
+        receivedNote(channel, note, 0);
 }
 
 void handleBend(byte channel, int value)
