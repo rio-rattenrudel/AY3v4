@@ -421,7 +421,16 @@ void buttPressed(int pin, int state)
             case 5:     // ROW 2: LFO/ARP
 
                         // no sequence? -> lfo pitch
-                        if (seqSetup == NONE) pressedRow = pressedRow == 2 ? 0 : 2;
+                        if (seqSetup == NONE) {
+
+                            if (pressedRow) {
+
+                                // goto preset
+                                pressedRow = 0;
+                                ledNumber = oldNumber;
+
+                            } else pressedRow = 2;
+                        }
                         break;
 
             case 10:    // ROW 3: NOISE
@@ -583,7 +592,7 @@ void buttPressed(int pin, int state)
                         if (pressedRow != 3 && seqSetup != EDIT && !(pressedRow == 4 && envPeriodType == 0)) {
 
                             // toggle: PRESET / BANK
-                            if (countDown > 9) mode = (mode == 1) ? 2 : 1;
+                            if (!pressedRow && countDown > 9) mode = (mode == 1) ? 2 : 1;
 
                             encPressed = false;
                             ledNumber = oldNumber;
