@@ -3,7 +3,7 @@ void initPreset()
     // normal mode
     if (!writeConfig) {
 
-        for (byte i = 0; i < 16; i++) seqNote[i] = 0;
+        for (byte i = 0; i < 16; i++) seqNote[i] = 61; // 60 (+1): C-4
 
         for (byte i = 1; i < 7; i++) {
             ledMatrix[i] = 0;

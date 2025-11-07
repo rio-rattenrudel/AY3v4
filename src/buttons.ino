@@ -501,6 +501,13 @@ void buttPressed(int pin, int state)
                             seqSetup = NONE;
                             seqPressed = false;
 
+                            // recover mixer
+                            data7ALast = B11111111;
+                            data7BLast = B11111111;
+
+                            // recover amp
+                            setVolEnvelopes();
+
                             // goto preset
                             pressedRow = 0;
                             ledNumber = oldNumber;

@@ -259,8 +259,16 @@ void receivedNote(byte channel, byte note, byte vel)
         seqNote[selectedStep] = note;
 
         // enable first voice of every chip
-        AY3( 7, B11111110);
-        AY32(7, B11111110);
+        byte data = B11111111;
+        if (seqVoice[selectedStep] && vel) data &= ~B00000001;
+        if (seqNoise[selectedStep] && vel) data &= ~B00001000;
+
+        AY3( 7, data);
+        AY32(7, data);
+
+        // adjust channel a: volume & no envelope
+        AY3( 8, B00001111);
+        AY32(8, B00001111);
 
         // set base note by on/off event
         base[1] = vel ? note : 0;
