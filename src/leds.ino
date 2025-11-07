@@ -223,7 +223,15 @@ void doLedMatrix()
                 } else                      maskC = ledMatrix[2];
 
 
-                if (seqmode) maskC = 0;
+                if (seqmode) {
+
+                    // octave of note +/- (oct 3..8)
+                    byte dot;
+                    for (dot = 0; dot < 5; dot++)
+                        if (seqNote[selectedStep] <= 12 * (dot + 3)) break;
+
+                    maskC = 1 << dot;
+                }
 
                 if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[2];
 
@@ -291,8 +299,9 @@ void doLedMatrix()
 
 
                 if (seqmode) {
-                    if (seqVoice[selectedStep] == 1)    maskC = B00111111;
-                    else                                maskC = 0;
+
+                    // voice line
+                    maskC = seqVoice[selectedStep] == 1 ? B00111111 : 0;
                 }
 
                 if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[1];
@@ -350,8 +359,21 @@ void doLedMatrix()
 
 
                     if (seqmode) {
-                        if (i == 3 && seqNoise[selectedStep] == 1)  maskC = B00111111;
-                        else                                        maskC = 0;
+                        if (i == 3) {
+
+                            // noise line
+                            maskC = seqNoise[selectedStep] == 1 ? B00111111 : 0;
+
+                        } else {
+
+                            // note of octave 0..5 (C - F) of 12
+                            byte noteOfOct = (seqNote[selectedStep]-1) % 12;
+                            maskC = noteOfOct < 6 ? 1 << noteOfOct : 0;
+
+                        }
+
+
+
                     }
 
                     if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[i];
@@ -372,7 +394,12 @@ void doLedMatrix()
                 } else                      maskC = ledMatrix[5];
 
                 // SEQ EDIT
-                if (seqSetup == EDIT) maskC = 0;
+                if (seqSetup == EDIT) {
+
+                    // note of octave 6..11 (Fis - H) of 12
+                    byte noteOfOct = (seqNote[selectedStep]-1) % 12;
+                    maskC = noteOfOct > 5 ? 1 << (noteOfOct-6) : 0;
+                }
 
                 if (displaycc < MAX_LEDPICCOUNT) maskC = ledMatrixPic[5];
 
