@@ -152,6 +152,7 @@ byte countDown          = 0;
 bool inputToggle        = false;
 byte maincc             = 0;
 uint16_t encodercc      = 0;
+uint16_t encodereditcc  = 0;
 uint16_t seqsetupcc     = 0;
 uint16_t displaycc      = INIT_LOAD_CYCLE;
 uint16_t samplecc       = 0;
@@ -175,6 +176,7 @@ byte pressedCol         = 9;
 byte voiceMode          = 0;
 bool seqPressed;
 bool encPressed;
+bool encEditPressed;
 bool voicePressed;
 
 // pots

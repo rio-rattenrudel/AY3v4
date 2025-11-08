@@ -282,57 +282,8 @@ void buttPressed(int pin, int state)
             // ENCODER SWITCH
             //
 
-            case 1:     // envelope should toggle envelop speed mode
-                        if (pressedRow == 3 || (pressedRow == 4 && envPeriodType == 0)) {
-
-                            // no sequence?
-                            if (seqSetup == NONE) {
-
-                                if (displaycc >= MAX_LEDPICCOUNT) copyMatrix();
-
-                                byte m = pressedRow == 3 ? noiseMode : envMode;
-
-                                // toggle envelope mode [F O]
-                                m = m ? 0 : 1;
-
-                                displaycc = 0;
-
-                                // F - Full Range Mode (default)
-                                if (m == 0) {
-                                    
-                                    ledMatrixPic[1] = B110011;
-                                    ledMatrixPic[2] = B110011;
-                                    ledMatrixPic[3] = B011110;
-                                    ledMatrixPic[4] = B110011;
-                                    ledMatrixPic[5] = B110011;
-                                }
-
-                                // O - Note Offset Mode
-                                if (m == 1) {
-
-                                    ledMatrixPic[1] = B000110;
-                                    ledMatrixPic[2] = B001100;
-                                    ledMatrixPic[3] = B011000;
-                                    ledMatrixPic[4] = B001100;
-                                    ledMatrixPic[5] = B000110;
-                                }
-
-                                if (pressedRow == 3) {
-                                    noiseMode = m;
-
-                                    // restore last value
-                                    if (m == 0) updateNoiseFreq();
-
-                                } else {
-                                    envMode = m;
-
-                                    // restore last value
-                                    if (m == 0) updateEnvSpeed();
-                                }
-                            }
-
-                        // seq length
-                        } else if (seqSetup == EDIT) {
+            case 1:     // seq length
+                        if (seqSetup == EDIT) {
                             seqMax = selectedStep;
                             if (!seqMax) seqMax = 15;
                             maincc = 2;
@@ -362,6 +313,8 @@ void buttPressed(int pin, int state)
                                 oldNumber = ledNumber;
                             }
                         }
+
+                        encEditPressed = true;
                         break;
 
             //
@@ -588,8 +541,60 @@ void buttPressed(int pin, int state)
             // ENCODER SWITCH
             //
 
-            case 1:     // handle except noise & envelope selection
-                        if (pressedRow != 3 && seqSetup != EDIT && !(pressedRow == 4 && envPeriodType == 0)) {
+            case 1:     // release encoder
+                        encEditPressed = false;
+
+                        // envelope should toggle envelope speed mode
+                        if (pressedRow == 3 || (pressedRow == 4 && envPeriodType == 0)) {
+
+                            // no sequence?
+                            if (seqSetup == NONE) {
+
+                                if (displaycc >= MAX_LEDPICCOUNT) copyMatrix();
+
+                                byte m = pressedRow == 3 ? noiseMode : envMode;
+
+                                // toggle envelope mode [F O]
+                                m = m ? 0 : 1;
+
+                                displaycc = 0;
+
+                                // F - Full Range Mode (default)
+                                if (m == 0) {
+                                    
+                                    ledMatrixPic[1] = B110011;
+                                    ledMatrixPic[2] = B110011;
+                                    ledMatrixPic[3] = B011110;
+                                    ledMatrixPic[4] = B110011;
+                                    ledMatrixPic[5] = B110011;
+                                }
+
+                                // O - Note Offset Mode
+                                if (m == 1) {
+
+                                    ledMatrixPic[1] = B000110;
+                                    ledMatrixPic[2] = B001100;
+                                    ledMatrixPic[3] = B011000;
+                                    ledMatrixPic[4] = B001100;
+                                    ledMatrixPic[5] = B000110;
+                                }
+
+                                if (pressedRow == 3) {
+                                    noiseMode = m;
+
+                                    // restore last value
+                                    if (m == 0) updateNoiseFreq();
+
+                                } else {
+                                    envMode = m;
+
+                                    // restore last value
+                                    if (m == 0) updateEnvSpeed();
+                                }
+                            }
+
+                        // no sequence?
+                        } else if (seqSetup == NONE) {
 
                             // toggle: PRESET / BANK
                             if (!pressedRow && countDown > 9) mode = (mode == 1) ? 2 : 1;

@@ -57,16 +57,19 @@ void tickStateMachine()
     if (encPressed) {
         encodercc++;
 
+        // divider
         if (encodercc > 1000) {
             encodercc = 0;
             countDown--;
 
+            // display count down
             if (countDown < 9) ledNumber = aymidState.enabled ? 9-countDown : countDown;
 
             // release & save preset
             if (!countDown) {
                 encPressed = false;
 
+                // exit aymid
                 if (aymidState.enabled) {
                     aymidState.enabled = false;
                     pressedRow = 0;
@@ -74,12 +77,32 @@ void tickStateMachine()
                     // reload preset
                     mode = 1;
                     loadRequest = true;
-                }
-                else save();
+                
+                // store preset
+                } else save();
             }
         }
     } else encodercc = 0;
 
+
+    if (encEditPressed) {
+
+        if (pressedRow) {
+            encodereditcc++;
+
+            // divider
+            if (encodereditcc > 12000) {
+                encodereditcc = 0;
+
+                // goto preset
+                encEditPressed = false;
+                encPressed = false;
+                ledNumber = oldNumber;
+                pressedRow = 0;
+                encoderMoved(0);
+            }
+        }
+    } else encodereditcc = 0;
 
     // load preset
     if (loadRequest && !writeConfig && displaycc >= 20000) {
