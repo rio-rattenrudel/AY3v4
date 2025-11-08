@@ -172,6 +172,9 @@ void doPots()
     // AYMID routine
     if (aymidState.enabled) return potTickAymid();
 
+    // protected by save request
+    if (saveRequest) return;
+
     int analogTemp;
 
     switch (pottickcc) {

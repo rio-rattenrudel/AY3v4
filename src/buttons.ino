@@ -258,6 +258,22 @@ void buttPressed(int pin, int state)
         return;
     }
 
+    // any action (except enc)
+    // cancels the save request & action
+
+    if (saveRequest && pin != 1) {
+        saveRequest = false;
+
+        // restore preset/bank
+        preset  = lastPreset;
+        bank    = lastBank;
+
+        ledNumber = oldNumber;
+        pressedRow = 0;
+        encoderMoved(0);
+        return;
+    }
+
     // pressed
     if (state == 0) {
 
@@ -282,7 +298,14 @@ void buttPressed(int pin, int state)
             // ENCODER SWITCH
             //
 
-            case 1:     // seq length
+            case 1:     // save preset
+                        if (saveRequest) {
+                            saveRequest = false;
+                            save();
+                            return;
+                        }
+
+                        // seq length
                         if (seqSetup == EDIT) {
                             seqMax = selectedStep;
                             if (!seqMax) seqMax = 15;

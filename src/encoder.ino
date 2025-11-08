@@ -46,6 +46,9 @@ void encoderMoved(int8_t dir)
     // blocked motion by button (save guard)
     if (dir && encPressed) return;
 
+    // force preset/bank selection by save request
+    if (saveRequest) pressedRow = 0;
+
     if (seqSetup == EDIT) {
 
         // set step

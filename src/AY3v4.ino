@@ -127,6 +127,7 @@ int8_t selectedChip     = -1;       // -1 both, 0 chip1, 1 chip2
 int8_t lastSingleChip   = 0;
 byte seqSetup           = NONE;
 byte mode               = 1;
+byte saveRequest        = false;
 byte loadRequest        = true;
 
 // ay3

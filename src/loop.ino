@@ -78,8 +78,11 @@ void tickStateMachine()
                     mode = 1;
                     loadRequest = true;
                 
-                // store preset
-                } else save();
+                // initiate storing
+                } else {
+                    saveRequest = true;
+                    oldNumber = ledNumber;
+                }
             }
         }
     } else encodercc = 0;
@@ -108,18 +111,22 @@ void tickStateMachine()
     if (loadRequest && !writeConfig && displaycc >= 20000) {
         loadRequest = false;
 
-        if (lastPreset != preset) {
-            lastPreset = preset;
-            EEPROM.write(3841, preset); 
-        }
+        // protected by save request
+        if (!saveRequest) {
 
-        if (lastBank != bank) {
-            lastBank = bank;
-            EEPROM.write(3842, bank);
-        }
+            if (lastPreset != preset) {
+                lastPreset = preset;
+                EEPROM.write(3841, preset); 
+            }
 
-        oldNumber = ledNumber = (mode == 1) ? preset + 1 : bank + 1;
-        load();
+            if (lastBank != bank) {
+                lastBank = bank;
+                EEPROM.write(3842, bank);
+            }
+
+            oldNumber = ledNumber = (mode == 1) ? preset + 1 : bank + 1;
+            load();
+        }
     }
 
 

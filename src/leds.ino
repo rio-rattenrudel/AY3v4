@@ -121,8 +121,16 @@ void ledTickAymid()
 
 void doLedMatrix()
 {
-    // decide flasher's speed (2x or 1x - default)
-    byte speed = (pressedRow == 3 || pressedRow == 4) && selectedChip > -1 && !aymidState.enabled ? FLASHSPEED << 1 : FLASHSPEED;
+    // flash speed (1x)
+    byte speed = FLASHSPEED;
+
+    // non aymid handling
+    if (!aymidState.enabled) {
+
+        // flash speed (2x) for save request mode or noise & env chip selections
+        if (((pressedRow == 3 || pressedRow == 4) && selectedChip > -1) || saveRequest)
+            speed = FLASHSPEED << 1;
+    }
 
     matrixFlasher += speed;
     if (matrixFlasher > 4000)
@@ -172,26 +180,29 @@ void doLedMatrix()
                 if (ledNumber == 8) { maskB = B11111011; maskC = B10000000; }
 
                 // flash selected
-                if (seqmode) {
+                if (seqmode || saveRequest) {
 
                     if (!flippedN) {
 
                         maskB = B11111111;
                         maskC = B00000000;
 
-                        // show sequencer max bit (seq length)
-                        if ((selectedStep < 8 && seqMax < 8) || (selectedStep >= 8 && seqMax >= 8)) {
+                        if (seqmode) {
 
-                            if (flippedZ) {
+                            // show sequencer max bit (seq length)
+                            if ((selectedStep < 8 && seqMax < 8) || (selectedStep >= 8 && seqMax >= 8)) {
 
-                                if (seqMax % 8 == 0) { maskB = B11111110; maskC = B01000000; }
-                                if (seqMax % 8 == 1) { maskB = B11111101; maskC = B01000000; }
-                                if (seqMax % 8 == 2) { maskB = B11111011; maskC = B01000000; }
-                                if (seqMax % 8 == 3) { maskB = B11110111; maskC = B01000000; }
-                                if (seqMax % 8 == 4) { maskB = B11101111; maskC = B01000000; }
-                                if (seqMax % 8 == 5) { maskB = B11111110; maskC = B10000000; }
-                                if (seqMax % 8 == 6) { maskB = B11111101; maskC = B10000000; }
-                                if (seqMax % 8 == 7) { maskB = B11111011; maskC = B10000000; }
+                                if (flippedZ) {
+
+                                    if (seqMax % 8 == 0) { maskB = B11111110; maskC = B01000000; }
+                                    if (seqMax % 8 == 1) { maskB = B11111101; maskC = B01000000; }
+                                    if (seqMax % 8 == 2) { maskB = B11111011; maskC = B01000000; }
+                                    if (seqMax % 8 == 3) { maskB = B11110111; maskC = B01000000; }
+                                    if (seqMax % 8 == 4) { maskB = B11101111; maskC = B01000000; }
+                                    if (seqMax % 8 == 5) { maskB = B11111110; maskC = B10000000; }
+                                    if (seqMax % 8 == 6) { maskB = B11111101; maskC = B10000000; }
+                                    if (seqMax % 8 == 7) { maskB = B11111011; maskC = B10000000; }
+                                }
                             }
                         }
                     }

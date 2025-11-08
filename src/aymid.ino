@@ -1123,8 +1123,11 @@ void handleAymidFrameUpdate(const byte* buffer) {
     if (!aymidState.enabled) {
         copyAndResetDisplay();
         aymidState.enabled = true;
+        saveRequest = false;
+        loadRequest = false;
+
         initializeAY3s();
-        aymidRestore(-1); // TODO
+        aymidRestore(-1);
         pressedRow = 1;
     }
 
@@ -1332,8 +1335,11 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
             if (!aymidState.enabled) {
                 copyAndResetDisplay();
                 aymidState.enabled = true;
+                saveRequest = false;
+                loadRequest = false;
+                
                 initializeAY3s();
-                aymidRestore(-1); // TODO
+                aymidRestore(-1);
             }
             if (!pressedRow) pressedRow = 1;
             break;
