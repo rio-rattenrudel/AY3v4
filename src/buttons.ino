@@ -305,13 +305,8 @@ void buttPressed(int pin, int state)
                             return;
                         }
 
-                        // seq length
-                        if (seqSetup == EDIT) {
-                            seqMax = selectedStep;
-                            if (!seqMax) seqMax = 15;
-                            maincc = 2;
-                        
-                        } else {
+                        // default
+                        if (seqSetup == NONE) {
 
                             // initialize preset
                             if (voicePressed) {
@@ -482,16 +477,8 @@ void buttPressed(int pin, int state)
 
                         if (pressedRow == 5 || seqSetup == EDIT) {
 
-                            // exit mode
-                            seqSetup = NONE;
-                            seqPressed = false;
-
-                            // recover mixer
-                            data7ALast = B11111111;
-                            data7BLast = B11111111;
-
-                            // recover amp
-                            setVolEnvelopes();
+                            // exit seq editing
+                            exitSequencerEdit();
 
                             // goto preset
                             pressedRow = 0;
@@ -615,17 +602,29 @@ void buttPressed(int pin, int state)
                                     if (m == 0) updateEnvSpeed();
                                 }
                             }
+                        
+                        } else {
 
-                        // no sequence?
-                        } else if (seqSetup == NONE) {
+                            // sequence?
+                            if (seqSetup == EDIT) {
 
-                            // toggle: PRESET / BANK
-                            if (!pressedRow && countDown > 9) mode = (mode == 1) ? 2 : 1;
+                                // seq length
+                                seqMax = selectedStep;
+                                if (!seqMax) seqMax = 15;
+                                
+                                // flash offset
+                                maincc = 2;
 
-                            encPressed = false;
-                            ledNumber = oldNumber;
-                            pressedRow = 0;
-                            encoderMoved(0);
+                            } else {
+
+                                // toggle: PRESET / BANK
+                                if (!pressedRow && countDown > 9) mode = (mode == 1) ? 2 : 1;
+
+                                encPressed = false;
+                                ledNumber = oldNumber;
+                                pressedRow = 0;
+                                encoderMoved(0);
+                            }
                         }
                         break;
 

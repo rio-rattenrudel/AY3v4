@@ -97,6 +97,9 @@ void tickStateMachine()
             if (encodereditcc > 12000) {
                 encodereditcc = 0;
 
+                // exit seq editing
+                if (seqSetup == EDIT) exitSequencerEdit();
+
                 // goto preset
                 encEditPressed = false;
                 encPressed = false;
@@ -162,8 +165,6 @@ void tickStateMachine()
                     ledMatrixPic[3] = B111111;
                     ledMatrixPic[4] = B110000;
                     ledMatrixPic[5] = B111111;
-
-                    pressedRow = 0;
                 }
 
                 // release all notes

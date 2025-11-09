@@ -3,6 +3,9 @@ void initPreset()
     // normal mode
     if (!writeConfig) {
 
+        // reset chip selection
+        selectedChip = -1;
+
         for (byte i = 0; i < 16; i++) seqNote[i] = 61; // 60 (+1): C-4
 
         for (byte i = 1; i < 7; i++) {
@@ -15,22 +18,23 @@ void initPreset()
         vol[1] = 12;
         vol[4] = 12;
 
-        arpSpeed = 1;
-        lfoShape = 1;
-        lfoSpeed = 1;
-        lfoDepth = 1;
+        arpSpeed = 142;
+        lfoShape = 5;
+        lfoSpeed = 113;
+        lfoDepth = 13;
+
         envNumber[0] = 1;
         envNumber[1] = 1;
 
-        lastEnvSpeedLUT = 2;
-        lastEnvSpeed = 0;
+        lastEnvSpeedLUT = 42;
+        lastEnvSpeed = 107;
 
-        seqSpeed = 1;
-        detune = 1;
-        glide = 1;
+        seqSpeed = 14;
+        detune = 0;
+        glide = 0;
 
-        noiseFreq[0] = 16;
-        noiseFreq[1] = 16;
+        noiseFreq[0] = 0;
+        noiseFreq[1] = 0;
 
         for (byte i = 0; i < 8; i++) {
             seqNoise[i]     = 0;
@@ -48,6 +52,38 @@ void initPreset()
         noiseMode = 0;
 
         seqMax = 15;
+
+        //
+        // update params
+        //
+
+        // update detune
+        doDetune(detune);
+
+        // update noise
+        AY3(6, noiseFreq[0]);
+        AY32(6, noiseFreq[1]);
+
+        data7ALast = 0;
+        data7BLast = 0;
+
+        // update vol/env a..f
+        setVolEnvelopes();
+
+        // prepare pitch a..f
+        preparePitches();
+
+        // update arp range
+        arpRange = map(lfoDepth, 0, 255, 0, 6);
+
+        envShape[0] = B0000;
+        envShape[1] = B0000;
+
+        // update env shape
+        triggerEnv();
+
+        // stop envelope freq
+        stopEnvSpeed();
     }
 }
 

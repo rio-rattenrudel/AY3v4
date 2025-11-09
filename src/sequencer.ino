@@ -22,3 +22,17 @@ void doSequencerClock()
     // process
     if (seqcc >= clockSpeeds[seqSpeed ? seqSpeed-1 : 0]) processMixerAndSteps();
 }
+
+void exitSequencerEdit()
+{
+    // exit mode
+    seqSetup = NONE;
+    seqPressed = false;
+
+    // recover mixer
+    data7ALast = B11111111;
+    data7BLast = B11111111;
+
+    // recover amp
+    setVolEnvelopes();
+}

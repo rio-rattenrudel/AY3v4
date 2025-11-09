@@ -1125,6 +1125,7 @@ void handleAymidFrameUpdate(const byte* buffer) {
         aymidState.enabled = true;
         saveRequest = false;
         loadRequest = false;
+        seqSetup = NONE;
 
         initializeAY3s();
         aymidRestore(-1);
@@ -1337,6 +1338,7 @@ void aymidProcessMessage(const byte* buffer, unsigned int size) {
                 aymidState.enabled = true;
                 saveRequest = false;
                 loadRequest = false;
+                seqSetup = NONE;
                 
                 initializeAY3s();
                 aymidRestore(-1);
