@@ -4,7 +4,7 @@
 #include "mva.h"
 
 /***********************************
-    -= AY3 version 4 ( rc1 ) =-
+    -=    AY3 version 4.1    =-
       ~-~-= phoenix =-~-~-
 
         + synth engine overhaul
