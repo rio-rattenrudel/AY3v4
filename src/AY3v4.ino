@@ -347,8 +347,8 @@ void setup()
 
     if (!masterChannel || masterChannel > 16) masterChannel = 1;
 
-    if (boardRevision) { updateAy32 = updateAy32B; BDIRPin = 15; }
-    else               { updateAy32 = updateAy32A; }
+    if (boardRevision == 1) { updateAy32 = updateAy32B; BDIRPin = 15; }
+    else                    { updateAy32 = updateAy32A; }
 
     pinMode(15, OUTPUT);
     DDRD = B11111100;
