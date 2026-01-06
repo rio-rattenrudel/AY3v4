@@ -58,6 +58,9 @@ enum class PitchType { TONE, NOISE, ENVELOPE };
 #define CLOCK_LOW       2           // 500 Khz
 #define CLOCK_ZXEXT     3           // 1.773 Mhz by external source
 
+#define ENV_PDTYPE_MIX  0           // LOG/LIN
+#define ENV_PDTYPE_LUT  1           // LUT (OLD)
+
 #define MAX_SEQSTEP     15
 #define MAX_REVISION    1
 #define MAX_CLOCKTYPE   2
@@ -340,15 +343,24 @@ void setup()
     clockType           = EEPROM.read(3845);
     envPeriodType       = EEPROM.read(3846);
 
-    // validation
-    if (preset > 7)         preset          = 0;
-    if (bank > 7)           bank            = 0;
-    if (envPeriodType > 1)  envPeriodType   = 0;
 
-    if (!masterChannel || masterChannel > 16) masterChannel = 1;
+    // validation of limit values and standard initialisation
+    // ------------------------------------------------------
+    // note: BOARD_REVC and CLOCK_ZXEXT are excluded at this time, as 
+    // they are currently not supported by the hardware and therefore 
+    // need to be extended here! These restrictions are necessary, as it 
+    // is currently unclear what is actually stored in existing devices.
 
-    if (boardRevision == 1) { updateAy32 = updateAy32B; BDIRPin = 15; }
-    else                    { updateAy32 = updateAy32A; }
+    if (preset          > 7)                    preset          = 0;
+    if (bank            > 7)                    bank            = 0;
+    if (envPeriodType   > 1)                    envPeriodType   = ENV_PDTYPE_MIX;
+    if (clockType       > CLOCK_LOW)            clockType       = CLOCK_ATARI;
+    if (boardRevision   > BOARD_REVB)           boardRevision   = BOARD_REVA;
+    if (!masterChannel || masterChannel > 16)   masterChannel   = 1;
+
+
+    if (boardRevision == BOARD_REVB)    { updateAy32 = updateAy32B; BDIRPin = 15; }
+    else                                { updateAy32 = updateAy32A; }
 
     pinMode(15, OUTPUT);
     DDRD = B11111100;
@@ -473,8 +485,8 @@ void setup()
     //
 
     if      (clockType == CLOCK_ZX)     setupTimerZX();
-    else if (clockType == CLOCK_ATARI)  setupTimerAtari();
-    else                                setupTimer();
+    else if (clockType == CLOCK_LOW)    setupTimer();
+    else                                setupTimerAtari();
 
     // BDIR chip 2 - REVA: PD6 (14), >REVB: PD7 (15)
     digitalWrite(BDIRPin, LOW); // time-critical, depends on the parameter passed!
