@@ -33,7 +33,8 @@ enum class PitchType { TONE, NOISE, ENVELOPE };
 #define USEVERSIONFLAG  1           // VALIDATES A VERSION FLAG TO IDENTIFY CONFIG STATE
 
 // timing (!don't touch!)
-#define COUNT_DELAY_ZX  2           // time-critical (sync: 0..4)           <<< initial offset <<< ?
+#define CNT_DELAY_ZX    7           // time-critical (sync: 0..8)           <<< initial offset <<< ?
+#define CNT_DELAY_ATARI 1           // time-critical (sync: 0..3)           <<< initial offset <<< ? or start delayed with overflow e.g.: 7 --> 255
 #define ASYNC_DELAY     62          // time-critical (sync: 31, 62, 124..)  >>> fine offset >>> ?
 #define ENC_TIMER       300
 #define SAMPLE_CYCLE    30          // sampling of pitches & glides
