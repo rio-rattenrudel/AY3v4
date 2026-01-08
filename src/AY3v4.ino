@@ -4,13 +4,13 @@
 #include "mva.h"
 
 /***********************************
-    -=    AY3 version 4.2    =-
+    -=    AY3 version 4.3    =-
       ~-~-= phoenix =-~-~-
 
         + synth engine overhaul
         + AYMID support
 
-    twisted electrons  (c) 2025
+    twisted electrons  (c) 2026
 ***********************************/
 
 enum class InitState { ALL, TONE, NOISE, MIXER, AMP, PITCH, ENVELOPE, ENVTYPE, ALLSTATES };
