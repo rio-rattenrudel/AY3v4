@@ -45,10 +45,15 @@ void handleSystemExclusive(const byte* buffer, unsigned int size)
 {
     if (size > 1) {
 
-        // Manufacturer ID used for AYMID
-        if (buffer[1] == 0x2E) {
+        // Manufacturer ID (46) used for AYMID
+        if (buffer[1] == 0x2E)
             aymidProcessMessage(buffer, size);
-        }
+
+        // Manufacturer ID (00 21 7F) used for twisted electrons + AY3
+        else if (buffer[1] == 0x00 && 
+                 buffer[2] == 0x21 && 
+                 buffer[3] == 0x7f && 
+                 buffer[4] == 0x03) configProcessMessage(buffer, size);
     }
 }
 
