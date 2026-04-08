@@ -37,8 +37,8 @@ enum class PitchType { TONE, NOISE, ENVELOPE };
 // timing (!don't touch!)
 #define CNT_DELAY_ZX    7           // time-critical (sync: 0..8)           <<< initial offset <<< ?
 #define CNT_DELAY_ATARI 1           // time-critical (sync: 0..3)           <<< initial offset <<< ? or start delayed with overflow e.g.: 7 --> 255
-#define OFFSET_L_ATARI  2485        // offset chip 1 (left)     ATARI  (max: 2499)
-#define OFFSET_R_ATARI  16          // offset chip 2 (right)    ATARI  (max: 2499)
+#define OFFSET_L_ATARI  2478        // offset chip 1 (left)     ATARI  (max: 2499)
+#define OFFSET_R_ATARI  42          // offset chip 2 (right)    ATARI  (max: 2499)
 #define OFFSET_L_ZX     2460        // offset chip 1 (left)     ZX     (max: 2478)
 #define OFFSET_R_ZX     90          // offset chip 2 (right)    ZX     (max: 2478)
 

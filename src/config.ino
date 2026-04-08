@@ -152,9 +152,9 @@ void handleCalibration(const byte* buffer, unsigned int size) {
                                 EEPROM.write(3850, CALIBRATION_ST1);
                                 EEPROM.write(3851, CALIBRATION_ST2);
 
-                                EEPROM.write(3852, nLoL);   // CHIP1 LO (LEFT)  (0...2499): 2485
+                                EEPROM.write(3852, nLoL);   // CHIP1 LO (LEFT)  (0...2499): 2478
                                 EEPROM.write(3853, nHiL);   // CHIP1 HI
-                                EEPROM.write(3854, nLoR);   // CHIP2 LO (RIGHT) (0...2499): 16
+                                EEPROM.write(3854, nLoR);   // CHIP2 LO (RIGHT) (0...2499): 42
                                 EEPROM.write(3855, nHiR);   // CHIP2 HI
                                 EEPROM.write(3856, nCnt);   // PWM OFFSET       (0...3):    1                                
                             }
