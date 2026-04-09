@@ -5,10 +5,11 @@
 #include "mva.h"
 
 /***********************************
-    -=    AY3 version 4.3    =-
+    -=    AY3 version 4.4    =-
       ~-~-= phoenix =-~-~-
 
         + synth engine overhaul
+        + calibration support
         + AYMID support
 
     twisted electrons  (c) 2026
